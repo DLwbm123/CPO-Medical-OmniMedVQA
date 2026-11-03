@@ -1,0 +1,218 @@
+{
+  "MedicalVQA_CT/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1430.0,
+    "accuracy": 0.9022082018927445,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1449.0,
+    "accuracy": 0.9141955835962146,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_Dermoscopy/metrics.json": {
+    "n": 648,
+    "correct": 520.0,
+    "accuracy": 0.8024691358024691,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_Fundus/metrics.json": {
+    "n": 529,
+    "correct": 469.0,
+    "accuracy": 0.8865784499054821,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 3011.0,
+    "accuracy": 0.9427050720100187,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_OCT/metrics.json": {
+    "n": 453,
+    "correct": 439.0,
+    "accuracy": 0.9690949227373068,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_Ultrasound/metrics.json": {
+    "n": 1098,
+    "correct": 1026.0,
+    "accuracy": 0.9344262295081968,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Dermoscopy/MedicalVQA_XRay/metrics.json": {
+    "n": 777,
+    "correct": 678.0,
+    "accuracy": 0.8725868725868726,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Fundus/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1443.0,
+    "accuracy": 0.910410094637224,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Fundus/MedicalVQA_Fundus/metrics.json": {
+    "n": 529,
+    "correct": 477.0,
+    "accuracy": 0.9017013232514177,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Fundus/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 2990.0,
+    "accuracy": 0.9361302442078898,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Fundus/MedicalVQA_Ultrasound/metrics.json": {
+    "n": 1098,
+    "correct": 1038.0,
+    "accuracy": 0.9453551912568307,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Fundus/MedicalVQA_XRay/metrics.json": {
+    "n": 777,
+    "correct": 691.0,
+    "accuracy": 0.8893178893178894,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_MRI/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1443.0,
+    "accuracy": 0.910410094637224,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_MRI/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 2950.0,
+    "accuracy": 0.9236067626800251,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1439.0,
+    "accuracy": 0.9078864353312303,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_Dermoscopy/metrics.json": {
+    "n": 648,
+    "correct": 519.0,
+    "accuracy": 0.8009259259259259,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_Fundus/metrics.json": {
+    "n": 529,
+    "correct": 469.0,
+    "accuracy": 0.8865784499054821,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 3025.0,
+    "accuracy": 0.9470882905447714,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_Microscopy/metrics.json": {
+    "n": 553,
+    "correct": 478.0,
+    "accuracy": 0.864376130198915,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_OCT/metrics.json": {
+    "n": 453,
+    "correct": 438.0,
+    "accuracy": 0.9668874172185431,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_Ultrasound/metrics.json": {
+    "n": 1098,
+    "correct": 1024.0,
+    "accuracy": 0.9326047358834244,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Microscopy/MedicalVQA_XRay/metrics.json": {
+    "n": 777,
+    "correct": 672.0,
+    "accuracy": 0.8648648648648649,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_OCT/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1445.0,
+    "accuracy": 0.9116719242902208,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_OCT/MedicalVQA_Fundus/metrics.json": {
+    "n": 529,
+    "correct": 475.0,
+    "accuracy": 0.8979206049149339,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_OCT/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 2981.0,
+    "accuracy": 0.9333124608641202,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_OCT/MedicalVQA_OCT/metrics.json": {
+    "n": 453,
+    "correct": 442.0,
+    "accuracy": 0.9757174392935982,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_OCT/MedicalVQA_Ultrasound/metrics.json": {
+    "n": 1098,
+    "correct": 1043.0,
+    "accuracy": 0.9499089253187614,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_OCT/MedicalVQA_XRay/metrics.json": {
+    "n": 777,
+    "correct": 686.0,
+    "accuracy": 0.8828828828828829,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Ultrasound/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1449.0,
+    "accuracy": 0.9141955835962146,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Ultrasound/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 2965.0,
+    "accuracy": 0.9283030682529744,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Ultrasound/MedicalVQA_Ultrasound/metrics.json": {
+    "n": 1098,
+    "correct": 1040.0,
+    "accuracy": 0.9471766848816029,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_Ultrasound/MedicalVQA_XRay/metrics.json": {
+    "n": 777,
+    "correct": 700.0,
+    "accuracy": 0.9009009009009009,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_XRay/MedicalVQA_CT/metrics.json": {
+    "n": 1585,
+    "correct": 1447.0,
+    "accuracy": 0.9129337539432176,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_XRay/MedicalVQA_MRI/metrics.json": {
+    "n": 3194,
+    "correct": 2948.0,
+    "accuracy": 0.9229805886036319,
+    "scoring": "boxed or explicit leading option letter"
+  },
+  "MedicalVQA_XRay/MedicalVQA_XRay/metrics.json": {
+    "n": 777,
+    "correct": 699.0,
+    "accuracy": 0.8996138996138996,
+    "scoring": "boxed or explicit leading option letter"
+  }
+}

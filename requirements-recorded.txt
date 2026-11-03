@@ -1,0 +1,12 @@
+# Principal environment versions; not a complete dependency lockfile.
+torch==2.8.0
+transformers==4.56.1
+trl==0.26.2
+accelerate==1.10.1
+peft==0.17.1
+datasets==4.0.0
+qwen-vl-utils==0.0.14
+Pillow==11.3.0
+safetensors==0.8.0
+PyYAML==6.0.3
+numpy==1.26.4

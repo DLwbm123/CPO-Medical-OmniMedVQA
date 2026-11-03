@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+*.pt
+*.bin
+*.safetensors
+checkpoints/
+cache/
+runs/
