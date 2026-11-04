@@ -2,7 +2,7 @@
 
 This repository records an eight-stage, single-seed adaptation of Continual Policy Optimization (CPO) to the open-image portion of OmniMedVQA. The tasks are CT, MRI, X-ray, ultrasound, fundus, OCT, dermoscopy and microscopy. It provides the adapted code and aggregate results, not the third-party images, questions, predictions or model weights.
 
-The complete stage-by-task accuracy matrix and its limitations are in [RESULTS.md](RESULTS.md). Machine-readable metrics and the frozen run protocol are in `results/`. A paired, standard GSPO control is in progress; no results from that control are asserted here.
+The complete stage-by-task accuracy matrix and its limitations are in [RESULTS.md](RESULTS.md). Machine-readable metrics and the frozen run protocol are in `results/`. The completed paired GSPO control and its limitations are reported in [GSPO_CONTROL_RESULTS.md](GSPO_CONTROL_RESULTS.md).
 
 The first CPO stage is GSPO with an empty mask. Subsequent stages use a cumulative per-tensor top-10% nonzero parameter-movement mask and globally normalized masked L1, with coefficient 100. To avoid storing redundant reference-weight files, the DDP trainer captures the protected reference coordinates from the immediately preceding model checkpoint when it initializes. The task-end mask code operates on full model weights. Answers are scored by a shared training/evaluation rule accepting a boxed answer or an explicit leading option letter.
 
