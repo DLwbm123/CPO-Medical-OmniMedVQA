@@ -10,6 +10,8 @@ The first CPO stage is GSPO with an empty mask. Subsequent stages use a cumulati
 
 The implementation builds on the [CPO authors' code](https://github.com/MaolinLuo/CPO), released under the MIT license reproduced in `LICENSE`. The medical benchmark comes from [OmniMedVQA](https://huggingface.co/datasets/foreverbeliever/OmniMedVQA); consult the upstream and individual source-dataset licenses before obtaining or using it. The extracted open images and QA files are expected under `OMNIMEDVQA_ROOT/data/OmniMedVQA`. Run `OMNIMEDVQA_ROOT=/path/to/OmniMedVQA python medical/prepare_omnimed.py` to generate the image-path-grouped split and task manifest. This is a new research split and not the benchmark's original evaluation protocol.
 
+The question-type sequence and its completed CPO results are described in [QUESTION_TYPE_RESULTS.md](QUESTION_TYPE_RESULTS.md); its GSPO control is running.
+
 The split is not established to be patient- or study-disjoint. Cross-source duplicate images and upstream training/test overlap remain unverified. Some sources may contain upstream benchmark test images. Do not claim patient-independent clinical generalization from these metrics.
 
 ## Environment and execution
