@@ -23,3 +23,6 @@ The split is not established to be patient- or study-disjoint. Cross-source dupl
 The run enforces a 23h55m wall-time cutoff and 40 GB on-disk guard with output headroom. As explicitly chosen for this experiment, it retains the first and latest task model and removes intermediate models only after the successor stage is evaluated and its mask created; it retains all metrics. Use a new output path and understand this retention behavior before running. No optimizer checkpoint is saved, so an interrupted stage cannot be resumed with the same optimizer state.
 
 These scripts were syntax-checked after making their paths portable, but the portable wrapper has not been rerun end-to-end. The recorded results come from the original server run. The training implementation was checked with a two-GPU diagnostic, synthetic masked-gradient checks, checkpoint-to-mask generation and sampled image/answer loading; these checks do not establish clinical validity.
+# Research progress
+
+See [医学持续学习进展、阶段结果与思维链思路](RESEARCH_PROGRESS_ZH.md) for the current cross-dataset study, its limitations, and the planned reasoning-prompt comparison.
