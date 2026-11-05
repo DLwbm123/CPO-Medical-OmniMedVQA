@@ -1,0 +1,5 @@
+# Cross-dataset implementation record
+
+These are the actual cross-dataset implementation files, saved separately from the original modality implementation: `train_grpo.py`, `compute_importance_mask.py`, `eval_torch.py`, `reward_funcs_medical.py`, `train_sft.py`, and the corrected `sft_dataset.py`. They depend on the existing `src` package and the experiment environment; this copy is an implementation record, not a standalone verified end-to-end reproduction. The experiment used a shared unmasked first-stage checkpoint and CPO masks for subsequent stages. Data conversion, data acquisition, environment setup and orchestration for this cross-dataset run are not yet packaged for public reproduction. Dataset images, question/answer records, predictions, model weights, private paths and logs are not distributed.
+
+The SFT loader correction changes iteration over image path dictionary keys to its values when the question has no image placeholder. The run failed at the beginning of stage 2 before any optimizer update, was repaired and resumed from stage 1 under its original time and disk budgets.
