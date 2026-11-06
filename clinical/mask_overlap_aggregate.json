@@ -1,0 +1,201 @@
+{
+  "seeds": {
+    "42": {
+      "stage1": {
+        "vision_encoder": {
+          "selected": 34202750,
+          "represented_coordinates": 631792860,
+          "tensors": 294
+        },
+        "vision_merger": {
+          "selected": 1338586,
+          "represented_coordinates": 36707328,
+          "tensors": 4
+        },
+        "token_embedding_head": {
+          "selected": 1357792,
+          "represented_coordinates": 622329856,
+          "tensors": 2
+        },
+        "other_language_or_misc": {
+          "selected": 102458962,
+          "represented_coordinates": 2774758400,
+          "tensors": 408
+        }
+      },
+      "cumulative_stage2": {
+        "vision_encoder": {
+          "selected": 38144826,
+          "represented_coordinates": 631792860,
+          "tensors": 294
+        },
+        "vision_merger": {
+          "selected": 1538677,
+          "represented_coordinates": 36707328,
+          "tensors": 4
+        },
+        "token_embedding_head": {
+          "selected": 2607020,
+          "represented_coordinates": 622329856,
+          "tensors": 2
+        },
+        "other_language_or_misc": {
+          "selected": 121006871,
+          "represented_coordinates": 2774761216,
+          "tensors": 412
+        }
+      },
+      "stage1_selected_not_in_stage2": 0
+    },
+    "43": {
+      "stage1": {
+        "vision_encoder": {
+          "selected": 33375319,
+          "represented_coordinates": 631792860,
+          "tensors": 294
+        },
+        "vision_merger": {
+          "selected": 1327300,
+          "represented_coordinates": 36707328,
+          "tensors": 4
+        },
+        "token_embedding_head": {
+          "selected": 1286984,
+          "represented_coordinates": 622329856,
+          "tensors": 2
+        },
+        "other_language_or_misc": {
+          "selected": 99350739,
+          "represented_coordinates": 2774760192,
+          "tensors": 408
+        }
+      },
+      "cumulative_stage2": {
+        "vision_encoder": {
+          "selected": 36768416,
+          "represented_coordinates": 631792860,
+          "tensors": 294
+        },
+        "vision_merger": {
+          "selected": 1500973,
+          "represented_coordinates": 36707328,
+          "tensors": 4
+        },
+        "token_embedding_head": {
+          "selected": 2157274,
+          "represented_coordinates": 622329856,
+          "tensors": 2
+        },
+        "other_language_or_misc": {
+          "selected": 118561982,
+          "represented_coordinates": 2774761216,
+          "tensors": 412
+        }
+      },
+      "stage1_selected_not_in_stage2": 0
+    },
+    "44": {
+      "stage1": {
+        "vision_encoder": {
+          "selected": 32882303,
+          "represented_coordinates": 631792860,
+          "tensors": 294
+        },
+        "vision_merger": {
+          "selected": 1430216,
+          "represented_coordinates": 36707328,
+          "tensors": 4
+        },
+        "token_embedding_head": {
+          "selected": 1224668,
+          "represented_coordinates": 622329856,
+          "tensors": 2
+        },
+        "other_language_or_misc": {
+          "selected": 101004461,
+          "represented_coordinates": 2774760192,
+          "tensors": 408
+        }
+      },
+      "cumulative_stage2": {
+        "vision_encoder": {
+          "selected": 35140355,
+          "represented_coordinates": 631792860,
+          "tensors": 294
+        },
+        "vision_merger": {
+          "selected": 1542029,
+          "represented_coordinates": 36707328,
+          "tensors": 4
+        },
+        "token_embedding_head": {
+          "selected": 1984330,
+          "represented_coordinates": 622329856,
+          "tensors": 2
+        },
+        "other_language_or_misc": {
+          "selected": 117540107,
+          "represented_coordinates": 2774763008,
+          "tensors": 412
+        }
+      },
+      "stage1_selected_not_in_stage2": 0
+    }
+  },
+  "pairs": {
+    "42_43": {
+      "other_language_or_misc": {
+        "intersection": 89628748,
+        "union": 112180953
+      },
+      "vision_encoder": {
+        "intersection": 28209503,
+        "union": 39368566
+      },
+      "vision_merger": {
+        "intersection": 1143240,
+        "union": 1522646
+      },
+      "token_embedding_head": {
+        "intersection": 1019764,
+        "union": 1625012
+      }
+    },
+    "42_44": {
+      "other_language_or_misc": {
+        "intersection": 89776577,
+        "union": 113686846
+      },
+      "vision_encoder": {
+        "intersection": 28073390,
+        "union": 39011663
+      },
+      "vision_merger": {
+        "intersection": 1168238,
+        "union": 1600564
+      },
+      "token_embedding_head": {
+        "intersection": 983678,
+        "union": 1598782
+      }
+    },
+    "43_44": {
+      "other_language_or_misc": {
+        "intersection": 88474443,
+        "union": 111880757
+      },
+      "vision_encoder": {
+        "intersection": 27914782,
+        "union": 38342840
+      },
+      "vision_merger": {
+        "intersection": 1161544,
+        "union": 1595972
+      },
+      "token_embedding_head": {
+        "intersection": 965068,
+        "union": 1546584
+      }
+    }
+  }
+}
