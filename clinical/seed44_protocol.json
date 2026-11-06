@@ -1,0 +1,14 @@
+{
+  "purpose": "Exploratory third-seed paired comparison; seed selected after results from seeds 42 and 43 were known",
+  "seed": 44,
+  "model": "Qwen2.5-VL-3B-Instruct, full parameters",
+  "sequence": ["MedBookVQA", "PathVQA", "SLAKE English"],
+  "training": "600 updates per task; GSPO and CPO use matching data, task order, direct-answer prompt, sampling and evaluation",
+  "cpo": "Shared first-stage GSPO checkpoint; cumulative per-tensor top 10 percent movement mask and masked L1 with lambda 100 for later tasks",
+  "scoring": "Normalized exact match against the last boxed answer, or complete response if no box",
+  "initial_evaluation": "Reused from identical base model and evaluator",
+  "preflight": "GSPO two-step preflight counted in its original time and storage budget; CPO shares completed first-stage model",
+  "budget": "Separate run guards: GSPO 38 billion bytes including shared data accounting, CPO 40 billion bytes for output; each below 24 hours from first start",
+  "limitations": "Patient/study and near-duplicate separation unverified; output format drift; third seed selected after prior results were observed",
+  "selection": "No test-set tuning or seed selection based on seed 44 performance"
+}
