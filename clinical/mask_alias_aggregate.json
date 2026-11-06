@@ -1,0 +1,68 @@
+{
+  "42_stage1": {
+    "mask_keys": 708,
+    "unmatched_physical_keys": 1,
+    "total_selected_state_keys": 139358090,
+    "selected_matched_physical": 138679194,
+    "selected_unmatched_alias": 678896,
+    "embedding_selected": 678896,
+    "output_alias_selected": 678896,
+    "embedding_alias_intersection": 678896,
+    "embedding_alias_equal": true
+  },
+  "42_stage2": {
+    "mask_keys": 712,
+    "unmatched_physical_keys": 1,
+    "total_selected_state_keys": 163297394,
+    "selected_matched_physical": 161993884,
+    "selected_unmatched_alias": 1303510,
+    "embedding_selected": 1303510,
+    "output_alias_selected": 1303510,
+    "embedding_alias_intersection": 1303510,
+    "embedding_alias_equal": true
+  },
+  "43_stage1": {
+    "mask_keys": 708,
+    "unmatched_physical_keys": 1,
+    "total_selected_state_keys": 135340342,
+    "selected_matched_physical": 134696850,
+    "selected_unmatched_alias": 643492,
+    "embedding_selected": 643492,
+    "output_alias_selected": 643492,
+    "embedding_alias_intersection": 643492,
+    "embedding_alias_equal": true
+  },
+  "43_stage2": {
+    "mask_keys": 712,
+    "unmatched_physical_keys": 1,
+    "total_selected_state_keys": 158988645,
+    "selected_matched_physical": 157910008,
+    "selected_unmatched_alias": 1078637,
+    "embedding_selected": 1078637,
+    "output_alias_selected": 1078637,
+    "embedding_alias_intersection": 1078637,
+    "embedding_alias_equal": true
+  },
+  "44_stage1": {
+    "mask_keys": 708,
+    "unmatched_physical_keys": 1,
+    "total_selected_state_keys": 136541648,
+    "selected_matched_physical": 135929314,
+    "selected_unmatched_alias": 612334,
+    "embedding_selected": 612334,
+    "output_alias_selected": 612334,
+    "embedding_alias_intersection": 612334,
+    "embedding_alias_equal": true
+  },
+  "44_stage2": {
+    "mask_keys": 712,
+    "unmatched_physical_keys": 1,
+    "total_selected_state_keys": 156206821,
+    "selected_matched_physical": 155214656,
+    "selected_unmatched_alias": 992165,
+    "embedding_selected": 992165,
+    "output_alias_selected": 992165,
+    "embedding_alias_intersection": 992165,
+    "embedding_alias_equal": true
+  }
+}
