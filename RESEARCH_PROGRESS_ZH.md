@@ -271,3 +271,11 @@ MedBook 的旧结果中 seed 42/43 大幅优势未在单题重评中复现；三
 此前掩码审计所报的 139,358,090 等数字是按状态字典键合计，包含共享权重的两个别名，因此不应视作去重后的物理参数数量。此前跨种子交并比同样按状态字典键计算，不能直接作为去重后的交并比。详细的别名选中数和交集见[聚合结果](clinical/mask_alias_aggregate.json)。
 
 这次只重建当前版本的配置与参数枚举，未捕获历史训练进程，也未实际运行梯度 hook；它为后续答案敏感度与随机掩码的计数口径提供依据，并不证明新方法有效。[冻结协议](clinical/mask_alias_protocol.json)和[适配脚本](clinical/mask_alias_accounting.py)已公开，适配后只做语法检查。
+
+## 共享参数梯度 hook 合成检查
+
+在不使用医学数据或真实模型权重的前提下，构造一个 embedding 与输出层共享的合成物理参数，给三个坐标指定掩码。以实际 `CLGRPOTrainer._make_mask_grad_hook` 添加手工计算的 masked-L1 梯度，并与显式参考梯度比较。单 CPU 进程中，两个别名对应一个物理参数、一个 hook，梯度最大绝对差为 **0**。
+
+这仅验证该合成条件下的 hook 散射和共享参数去重；未执行 `_compute_loss` 的完整流程、真实 GRPO、梯度累积、多卡或 ZeRO，也不能证明训练有效。第一次运行在执行 hook 前因缺少模块搜索路径而导入失败；已保留失败日志，修复入口路径后在原首次时钟和存储预算内完成。先前失败的真实模型答案敏感度预检未重跑。
+
+[冻结协议](clinical/tied_hook_synthetic_protocol.json)、[聚合结果](clinical/tied_hook_synthetic_aggregate.json)及[适配代码](clinical/tied_hook_synthetic.py)已公开；路径适配代码仅做语法检查。

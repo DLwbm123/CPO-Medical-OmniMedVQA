@@ -1,0 +1,10 @@
+{
+  "physical_parameter_count": 1,
+  "alias_parameter_names": 2,
+  "matched_physical_hooks": 1,
+  "selected_physical_coordinates": 3,
+  "lambda": 2.0,
+  "max_abs_gradient_difference_from_reference": 0.0,
+  "hook_matches_explicit_masked_l1": true,
+  "scope": "synthetic CPU no DDP or ZeRO; pending gradient manually constructed"
+}
