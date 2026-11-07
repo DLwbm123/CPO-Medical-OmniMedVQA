@@ -1,0 +1,14 @@
+{
+  "purpose": "four GPU inference-only model loading and synthetic text forward; no training",
+  "model": "Qwen2.5-VL-3B-Instruct",
+  "gpu": "NVIDIA RTX 3090 24 GiB",
+  "physical_gpu_indices": [2, 3, 4, 5],
+  "replicas": 4,
+  "dtype": "bfloat16",
+  "peak_allocated_bytes_per_gpu": 7638398976,
+  "peak_reserved_bytes_per_gpu": 7876902912,
+  "finite_forward_results": 4,
+  "elapsed_seconds": 130.35398054122925,
+  "exit_code": 0,
+  "limitations": "Independent inference replicas, short synthetic text and no gradients, optimizer, medical images or distributed training. This cannot establish PACT-Med training memory requirements or performance."
+}
