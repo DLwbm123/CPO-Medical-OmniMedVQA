@@ -1,0 +1,10 @@
+{
+  "purpose": "synthetic four-rank group, task synchronization and combined-gradient check",
+  "hardware": "4 x NVIDIA RTX 3090",
+  "cross_rank_advantage_group": "matched",
+  "task_broadcast": "matched",
+  "combined_gradient_max_absolute_error": 0.0,
+  "rank_exit_codes": [0, 0, 0, 0],
+  "elapsed_seconds": 11.033413410186768,
+  "limitations": "Single synthetic DDP step; no actual model, medical data, rollout generation, gradient accumulation, ZeRO, optimizer behavior, or scientific effectiveness evaluation."
+}

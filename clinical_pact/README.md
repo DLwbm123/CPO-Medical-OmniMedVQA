@@ -1,0 +1,9 @@
+# PACT-Med (implementation in progress)
+
+Standalone research components; historical CPO and frozen experiments are unchanged. `core.py` is the provided numerical prototype, `memory.py` implements eligible immutable references and bounded per-task balanced selection, `grouping.py` validates 4/2/2 same-question rollouts and their prompt identity, and `scoring.py` matches the existing clinical normalized exact-match scorer. The supplied method design is kept locally; it is not included in this code release.
+
+**Not a working trainer.** A restricted single-process TRL replay adapter, causal replay loss and task sampler are implemented, but are not an end-to-end training pipeline. Actual greedy memory creation and image loading, fast-context prompt optimization, distributed gathering/broadcast, optimizer and checkpoint/RNG state, resource guards and evaluation remain to be implemented and validated. The adapter uses one historical sample, not the proposed global budget of four, and has not been tested with a real model. The placeholder entry point explicitly refuses to start. No GPU, medical-data, DDP or scientific-effect validation is implied. This is not the no-replay setting: the proposed method accesses old training examples.
+
+Run lightweight checks from the repository root with `python3 -m unittest discover -s clinical_pact -p 'test_*.py'`. PyTorch is required for `core.py`; core tests skip if it is unavailable. Do not use these components for an experiment until actual trainer integration and the protocol's two-GPU and image/token alignment checks have passed.
+
+The four-rank synthetic check validates group advantage, task synchronization and a single combined DDP gradient; it does not validate the actual Qwen model, medical data, rollout generation, gradient accumulation or ZeRO. See four_rank_synthetic_result.json.
