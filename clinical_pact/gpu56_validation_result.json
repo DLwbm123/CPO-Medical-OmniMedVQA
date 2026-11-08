@@ -1,0 +1,94 @@
+{
+  "scope": "exploratory fixed validation, before/after only; not matched efficacy evidence",
+  "status": {
+    "reason": "completed",
+    "codes": [
+      0,
+      0
+    ],
+    "elapsed_seconds": 1324.0202975273132
+  },
+  "stage1": {
+    "stage": 1,
+    "scope": "not a matched-control or confirmatory efficacy result; validation has been used in earlier project diagnostics",
+    "datasets": [
+      {
+        "task": "MedicalVQA_MedBook",
+        "expected_n": 130,
+        "evaluated": 130,
+        "correct": 82,
+        "eos_terminated": 130,
+        "generated_tokens": 260,
+        "accuracy": 0.6307692307692307
+      },
+      {
+        "task": "MedicalVQA_Pathology",
+        "expected_n": 6259,
+        "evaluated": 6259,
+        "correct": 1003,
+        "eos_terminated": 6259,
+        "generated_tokens": 15377,
+        "accuracy": 0.16024924109282632
+      }
+    ],
+    "elapsed_seconds": 1290.0694296942092,
+    "peak_allocated_gpu_bytes": 7651354624
+  },
+  "stage2": {
+    "stage": 2,
+    "scope": "not a matched-control or confirmatory efficacy result; validation has been used in earlier project diagnostics",
+    "datasets": [
+      {
+        "task": "MedicalVQA_MedBook",
+        "expected_n": 130,
+        "evaluated": 130,
+        "correct": 83,
+        "eos_terminated": 130,
+        "generated_tokens": 260,
+        "accuracy": 0.6384615384615384
+      },
+      {
+        "task": "MedicalVQA_Pathology",
+        "expected_n": 6259,
+        "evaluated": 6259,
+        "correct": 1787,
+        "eos_terminated": 6259,
+        "generated_tokens": 20047,
+        "accuracy": 0.28550886723118707
+      }
+    ],
+    "elapsed_seconds": 1313.3827902977355,
+    "peak_allocated_gpu_bytes": 7651354624
+  },
+  "comparisons": [
+    {
+      "task": "MedicalVQA_MedBook",
+      "n": 130,
+      "stage1_correct": 82,
+      "stage2_correct": 83,
+      "stage1_accuracy": 0.6307692307692307,
+      "stage2_accuracy": 0.6384615384615384,
+      "correct_difference": 1,
+      "difference_percentage_points": 0.7692307692307665
+    },
+    {
+      "task": "MedicalVQA_Pathology",
+      "n": 6259,
+      "stage1_correct": 1003,
+      "stage2_correct": 1787,
+      "stage1_accuracy": 0.16024924109282632,
+      "stage2_accuracy": 0.28550886723118707,
+      "correct_difference": 784,
+      "difference_percentage_points": 12.525962613836075
+    }
+  ],
+  "limitations": [
+    "one seed, two tasks",
+    "no matched GSPO, replay-only or constant-weight protection control",
+    "no accepted local strategy proposal; both final cards empty",
+    "validation previously used in project diagnostics",
+    "patient/case and near-duplicate separation unverified",
+    "aggregate accuracy cannot identify per-example forgetting/rescue",
+    "training replay distinctness deviation and boundary restart retained in training report"
+  ]
+}
