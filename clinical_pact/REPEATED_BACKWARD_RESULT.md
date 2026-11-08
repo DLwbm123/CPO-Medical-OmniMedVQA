@@ -1,0 +1,11 @@
+# Same-objective backward control
+
+This prospective control asks a different question from the failed cross-objective gradient gate: does backpropagating **the identical scalar loss on one unchanged actual-model graph** reproduce the selected physical parameter gradient? It does not rerun the expired training or relax the earlier 0.001 criterion. It reuses the fixed stage-one checkpoint and first private training reference read-only, with no optimizer, weight update, sample reselection or efficacy evaluation. Three repetitions per condition were declared before execution; the only factor was torch deterministic algorithms off/on. CUBLAS_WORKSPACE_CONFIG=:4096:8 was fixed in both.
+
+With deterministic algorithms off, the loss remained 2 and the upstream logit VJP was exactly identical, yet repeated parameter gradients differed by maximum absolute 0.5 and 0.796875, or relative 0.0041667 and 0.006640625 (gradient magnitude 120). With deterministic algorithms on, both repeated upstream VJPs and selected parameter gradients were exactly identical in these three repetitions.
+
+This demonstrates downstream CUDA-backward nondeterminism in this particular actual-model, parameter, sample and environment. It supplies a concrete confound for the earlier cross-objective comparison: a difference of 0.0041667 also occurred without changing the objective. It does **not** retroactively pass that failed gate, prove that all earlier discrepancy came from nondeterminism, establish a specific kernel as the cause, or guarantee deterministic full-model/ZeRO training.
+
+The distinct control was preregistered in a new bounded directory with a 900-second hard deadline, 1GB total output guard and 100MB per-file limit. It completed exit 0 in about 12 supervised seconds; worker runtime about 5.44 seconds and peak allocated memory about 15.01GB. The prior failed experiment and its original clocks remain closed and retained. Only code, protocol and aggregate measurements are public; original training records, images, reference tokens, weights and raw private logs remain private.
+
+Next integration work should use explicit deterministic validation controls while retaining the original failed result. Full-parameter, ZeRO accumulation and recovery checks and dynamic strategy integration remain required before complete PACT efficacy experiments.

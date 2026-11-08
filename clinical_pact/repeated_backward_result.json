@@ -1,0 +1,45 @@
+{
+  "conditions": [
+    {
+      "deterministic_algorithms": false,
+      "repetitions": 3,
+      "status": "measured",
+      "loss": 2.0,
+      "parameter_gradient_max_abs": 120.0,
+      "input_vjp_repeat_max_abs_errors": [
+        0.0,
+        0.0
+      ],
+      "parameter_repeat_max_abs_errors": [
+        0.5,
+        0.796875
+      ],
+      "parameter_repeat_relative_max_errors": [
+        0.004166666666666667,
+        0.006640625
+      ]
+    },
+    {
+      "deterministic_algorithms": true,
+      "repetitions": 3,
+      "status": "measured",
+      "loss": 2.0,
+      "parameter_gradient_max_abs": 120.0,
+      "input_vjp_repeat_max_abs_errors": [
+        0.0,
+        0.0
+      ],
+      "parameter_repeat_max_abs_errors": [
+        0.0,
+        0.0
+      ],
+      "parameter_repeat_relative_max_errors": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "elapsed_seconds": 5.444502353668213,
+  "peak_allocated_bytes": 15005862400,
+  "scope": "same-objective repetition only; selected real tied parameter; no cross-objective equivalence retest, optimizer, model updates, tuning or efficacy claim; original failed gate remains failed"
+}
