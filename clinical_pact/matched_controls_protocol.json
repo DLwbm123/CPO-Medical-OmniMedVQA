@@ -1,0 +1,64 @@
+{
+  "purpose": "isolate replay protection and adaptive weighting from ordinary new-task learning",
+  "experiment_type": "new matched-start loss-condition controls; not retry of completed adaptive training",
+  "known_before_freeze": {
+    "adaptive_validation": {
+      "MedBook_correct": 83,
+      "MedBook_n": 130,
+      "PathVQA_correct": 1787,
+      "PathVQA_n": 6259
+    },
+    "initial_validation": {
+      "MedBook_correct": 82,
+      "PathVQA_correct": 1003
+    },
+    "adaptive_source_public_commit": "518ce1d",
+    "strategy_proposals_accepted": 0
+  },
+  "scope": "exploratory one-seed matched-start controls; not confirmatory PACT-full efficacy",
+  "arms": [
+    "plain_gspo",
+    "fixed_margin"
+  ],
+  "seed": 100,
+  "GPUs": [
+    5,
+    6
+  ],
+  "initial_model": "same preserved completed MedBook stage1 checkpoint as existing adaptive stage2",
+  "memory_n": 338,
+  "old_data": {
+    "plain_gspo": "none during training",
+    "fixed_margin": "same338 immutable training references, no reconstruction or gold substitution"
+  },
+  "fixed_weight": 1.0,
+  "fixed_weight_selection": "unit coefficient by definition; no sweep or selection from control results",
+  "new_data": "same full prepared PathVQA train split and seed100 sampler;200updates,4questions/update",
+  "training": "same published development stage2 GRPOConfig: bf16 full-parameter ZeRO3 GSPO sequence importance, G8, localbatch4/GAS4, lr5e-6 fresh AdamW foreachFalse, beta0, num_iterations1, steps_per_generation1",
+  "prompt": "fixed canonical for all8 trajectories; matches actual adaptive stage2 with empty cards; no dynamic proposer in either control",
+  "decoder": "single-trajectory sequential generation,128tokens,temp1,repetition1 sampled; logprobs use actual prompt",
+  "determinism": "full_determinismTrue and CUBLAS4096:8",
+  "fixed_margin_replay": "match actual historical code:2 uniform draws/rank with replacement, reuse across4 accumulated microsteps, same margin/tau objective and seed100000+2step+rank; do not silently impose distinctness",
+  "fixed_margin_audit": "same32 uniform old-memory draws every10updates including0, EMA computed for diagnostics; weight exactly1 regardless of audit",
+  "primary_outcomes": "both full validation accuracies130 MedBook and6259 PathVQA; report all raw correct/n and old/new tradeoff vs original adaptive and initial; no metric selection",
+  "evaluation": "canonical, single-example greedy128/repetition1, same frozen scorer/processor/pixels, no test read",
+  "cost_reporting": "same new-data optimizer updates, not equal compute; plain has no old-memory forwards; fixed has3200 replay and640 old-audit forwards across ranks, plus shared original memory-construction costs not re-incurred; disabled strategy audit/proposer differs in overhead from adaptive",
+  "checkpoint": "shared read-only initial model and each control final model preserved; no in-arm exact optimizer/sampler resume, no rolling fullAdam state",
+  "max_wall_seconds": 28800,
+  "output_guard_bytes": 40000000000,
+  "single_file_cap_bytes": 10000000000,
+  "estimated_new_storage_bytes": 17000000000,
+  "baseline_new_root_allocated_bytes": 0,
+  "guards": "one independent supervisor clock for both controls and evaluation; failure/stat error/byte/time stops all current children, no automatic retry; preserve any completed control",
+  "minimum_free_gpu_MiB_each_phase": 60000,
+  "stopping": "all2 training arms200updates plus both full validation denominators; any failure retained, no changed seed/config/sample search or re-labeled retry",
+  "privacy": "aggregate only; no images/questions/per-example outputs/private references/weights/rawlogs made public",
+  "limitations": [
+    "single seed",
+    "all conditions chosen after initial method validation was known; exploratory",
+    "no successful dynamic strategy discovery",
+    "question/patient and near-duplicate isolation unverified",
+    "historical replay-distinctness deviation retained; controls match actual with-replacement implementation",
+    "this is direct-answer cross-task GSPO control, not the explicitly stopped question-type experiment"
+  ]
+}

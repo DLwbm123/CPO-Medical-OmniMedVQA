@@ -1,0 +1,20 @@
+{
+  "scope": "matched-start loss controls, checkpoint index1=plain GSPO,index2=fixed unit margin; compare both to preserved adaptive result; exploratory",
+  "seed": 100,
+  "tasks": [
+    {
+      "name": "MedicalVQA_MedBook",
+      "n": 130
+    },
+    {
+      "name": "MedicalVQA_Pathology",
+      "n": 6259
+    }
+  ],
+  "max_new_tokens": 128,
+  "checkpoint_index_mapping": {
+    "1": "plain_gspo final",
+    "2": "fixed_margin final"
+  },
+  "selection": "full predefined validation only, no test/no parameter selection"
+}
