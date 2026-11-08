@@ -1,0 +1,43 @@
+{
+  "status": {
+    "reason": "completed",
+    "codes": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "elapsed_seconds": 632.846572637558
+  },
+  "completed": {
+    "stages": 2,
+    "updates_per_stage": 2,
+    "scope": "real-model engineering; no efficacy result; fixed cards, dual audit every step; no efficacy comparison or resume validation"
+  },
+  "memory_aggregate": {
+    "candidates": 32,
+    "eligible": 15,
+    "rejected": {
+      "incorrect": 15,
+      "near_tie": 2
+    }
+  },
+  "training": {
+    "1": {
+      "updates": 2,
+      "scope": "engineering only; fixed seed cards; no performance comparison",
+      "dual": {}
+    },
+    "2": {
+      "updates": 2,
+      "scope": "engineering only; fixed seed cards; no performance comparison",
+      "dual": {
+        "old": {
+          "weight": 0.0,
+          "ema_deficit": 0.04062499701976775,
+          "observations": 2
+        }
+      }
+    }
+  }
+}

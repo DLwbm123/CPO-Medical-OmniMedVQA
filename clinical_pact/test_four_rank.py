@@ -4,8 +4,8 @@ import os
 import torch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel
-from .core import TaskDualController
-from .distributed import distributed_group_advantages, synchronized_task
+from clinical_pact.core import TaskDualController
+from clinical_pact.distributed import distributed_group_advantages, synchronized_task
 
 
 def main():

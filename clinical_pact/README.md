@@ -7,3 +7,5 @@ Standalone research components; historical CPO and frozen experiments are unchan
 Run lightweight checks from the repository root with `python3 -m unittest discover -s clinical_pact -p 'test_*.py'`. PyTorch is required for `core.py`; core tests skip if it is unavailable. Do not use these components for an experiment until actual trainer integration and the protocol's two-GPU and image/token alignment checks have passed.
 
 The four-rank synthetic check validates group advantage, task synchronization and a single combined DDP gradient; it does not validate the actual Qwen model, medical data, rollout generation, gradient accumulation or ZeRO. See four_rank_synthetic_result.json.
+
+A bounded real-model driver (`dev_stream.py`) has now completed a four-GPU two-stage engineering run. This does not open the full training CLI: see ENGINEERING_RESULT.md for exact scope, zero dual weight, missing resume/dynamic-card checks and preserved failed attempts.

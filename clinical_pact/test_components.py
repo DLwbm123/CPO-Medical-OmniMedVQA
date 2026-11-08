@@ -51,3 +51,16 @@ class DataTests(unittest.TestCase):
             row = {'id': '1', 'image': '../outside', 'conversations': [{'value': 'q'}, {'value': 'a'}]}
             (root / 'jsons/train/data.json').write_text(json.dumps([row]))
             with self.assertRaises(ValueError): list(load_split(root, 'train'))
+
+class PromptTests(unittest.TestCase):
+    def test_allocation_and_training_only_selection(self):
+        from clinical_pact.prompt_population import Candidate, allocate_group, choose_cards
+        group = allocate_group(('stage', 1, 'question'), 'canonical', 'a', 'b')
+        self.assertEqual([x[1] for x in group].count('canonical'), 4)
+        self.assertEqual([x[1] for x in group].count('card_a'), 2)
+        self.assertEqual(len(group), 8)
+        canonical = Candidate('', 0, (1, 0, 0, 0))
+        first = Candidate('a', 1, (1, 1, 0, 0))
+        second = Candidate('b', 1, (0, 0, 1, 1))
+        self.assertEqual(set(choose_cards(canonical, [first, second])), {'a', 'b'})
+        self.assertEqual(choose_cards(canonical, [Candidate('c', 1, (1, 0, 0, 0))]), ('', ''))
