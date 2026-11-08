@@ -1,0 +1,11 @@
+{
+  "ranks": 4,
+  "weight_max_abs_error": 0.0,
+  "optimizer_state_max_abs_error": 0.0,
+  "restored_updates": 2,
+  "gzip_state_files": 12,
+  "all_state_files_gzip": true,
+  "total_state_bytes": 26608941279,
+  "peak_allocated_bytes_rank0": 49131482624,
+  "scope": "full-size Qwen4rank ZeRO3 response-NLL2step storage/recovery profile on first4 immutable training references; not GSPO, steady-state compression, full Trainer/PACT extra-state recovery, or efficacy evaluation"
+}

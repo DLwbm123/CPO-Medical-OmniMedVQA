@@ -1,0 +1,13 @@
+# Full-size Qwen compressed checkpoint storage and recovery
+
+Four RTX PRO 5000 72GB ranks completed the frozen engineering profile, exit codes all 0, with supervised elapsed time 446.77 seconds. The unchanged saved stage-one Qwen2.5-VL model was initialized with all unique parameters trainable in bf16 and actual ZeRO-3 FP32 AdamW state. Each rank used one of the first four immutable private training references. The profile performed two teacher-forced response-NLL updates; this is **not GSPO or a PACT efficacy comparison**.
+
+After update 0 it saved compressed model/Adam shards and rank RNG. It compared uninterrupted update 1 against a fresh engine loading those compressed states, restoring RNG, and performing the same update 1 under deterministic settings. Global maximum FP32 master-partition difference and Adam slot-state difference were both 0. Restored update count was 2. All 12 state files were gzip streams. Combined state size was 26,608,941,279 bytes. Rank-zero peak allocated GPU memory was 49,131,482,624 bytes; peak memory was not collected across all ranks.
+
+The distinct profile had a 2700-second timeout, 44GB output guard and 11GB per-file cap, and used no uncompressed checkpoint temporary files. Existing source models/data were read-only reused. The original engineering and failed gradient experiments remained closed and unchanged. Checkpoints and medical references remain private; only source, protocol and aggregate measurements are released.
+
+## Admission implications
+
+A single measured compressed state plus a bf16 first-stage model lower bound of 7,509,245,952 bytes totals **34,118,187,231 bytes**, before other outputs. Preserving the previous full state while atomically staging a same-sized new state, plus that first model, would instead require at least **60,727,128,510 bytes**, exceeding the 50GB limit. Therefore this result does not admit a default rolling full-checkpoint schedule. Storage planning must include temporary replacement peaks and preserve a usable committed checkpoint on failure.
+
+The optimizer has only one prior update when checkpointed, and the objective is response NLL. Compression ratio may change after many GSPO updates. Neither the long-run size nor full Trainer sampler/rollout and PACT memory/controller/card/cost-state recovery has been validated. This is an actual full-model backend recovery result, not a complete PACT trainer or evidence of retention/plasticity improvement. A stage-boundary-only checkpoint plan or another lossless plan must be explicitly frozen and fit the strict byte budget before a longer run; it must not silently discard protected history or required recovery state.
