@@ -1,0 +1,10 @@
+{
+  "ranks": 4,
+  "weight_max_abs_error": 0.0,
+  "optimizer_state_max_abs_error": 0.0,
+  "restored_updates": 2,
+  "gzip_state_files": 12,
+  "all_state_files_gzip": true,
+  "total_state_bytes": 48049,
+  "scope": "actual DeepSpeed ZeRO3 save/load plus rank RNG and stochastic tiny tied model; no medical model, realistic compression ratio, Trainer or PACT memory/controller integration"
+}
