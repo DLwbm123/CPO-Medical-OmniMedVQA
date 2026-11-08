@@ -1,0 +1,12 @@
+{
+  "reference_rule": "first stored eligible training memory",
+  "baseline_deficit": 0.0,
+  "controlled_deficit": 2.0,
+  "explicit_deficit": 2.0,
+  "gradient_max_abs": 120.0,
+  "gradient_difference_max_abs": 0.5,
+  "gradient_relative_max_error": 0.004166666666666667,
+  "peak_allocated_bytes": 12720418816,
+  "elapsed_seconds": 4.165576696395874,
+  "scope": "single real-model selected physical output-head parameter; only its requires_grad enabled; controlled EOS-logit perturbation; no optimizer updates; not full-parameter ZeRO, accumulation, retention or efficacy validation"
+}
