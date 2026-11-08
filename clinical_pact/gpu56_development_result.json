@@ -1,0 +1,251 @@
+{
+  "scope": "single-seed two-task bounded-grammar development; not confirmatory efficacy",
+  "seed": 100,
+  "tasks": [
+    "MedBook train",
+    "PathVQA train"
+  ],
+  "memory": {
+    "candidates": 512,
+    "eligible": 338,
+    "rejected": {
+      "incorrect": 174
+    }
+  },
+  "initial_attempt": {
+    "reason": "worker_failure",
+    "codes": [
+      1,
+      -15
+    ],
+    "elapsed_seconds": 5196.103402853012
+  },
+  "boundary_restart_attempt": {
+    "reason": "completed",
+    "codes": [
+      0,
+      0
+    ],
+    "attempt_elapsed_seconds": 8111.929660081863,
+    "elapsed_seconds_from_original_conservative_start": 13928.974767446518
+  },
+  "completed": {
+    "stages": 2,
+    "updates_per_stage": 200,
+    "scope": "development bounded-card variant; no test evaluation or paired efficacy comparison"
+  },
+  "stages": [
+    {
+      "stage": 1,
+      "updates": 200,
+      "first10_mean_training_reward": 0.421875,
+      "last10_mean_training_reward": 0.665625,
+      "training_log_entries": 200,
+      "nonzero_grad_norm_entries": 89,
+      "mean_training_reward": 0.58453125,
+      "auxiliary_audits": [],
+      "strategy_history": [
+        {
+          "update": 100,
+          "cycle": 1,
+          "audit_n": 32,
+          "canonical_correct": 26,
+          "candidate_correct": [
+            26,
+            26
+          ],
+          "distinct_nonempty_cards": 0,
+          "proposal_error": "ValueError"
+        }
+      ],
+      "final_nonempty_card_count": 0,
+      "proposer_cost": [
+        {
+          "prompt_tokens": 171,
+          "generated_tokens": 7,
+          "accepted": false,
+          "elapsed_seconds": 0.2786316969431937
+        }
+      ],
+      "summary": {
+        "train_runtime": 4926.1732,
+        "train_samples_per_second": 1.299,
+        "train_steps_per_second": 0.041,
+        "total_flos": 0.0,
+        "train_loss": -5.774199962615967e-10,
+        "epoch": 0.6611570247933884,
+        "step": 200
+      }
+    },
+    {
+      "stage": 2,
+      "updates": 200,
+      "first10_mean_training_reward": 0.134375,
+      "last10_mean_training_reward": 0.3625,
+      "training_log_entries": 200,
+      "nonzero_grad_norm_entries": 84,
+      "mean_training_reward": 0.3028125,
+      "auxiliary_audits": [
+        {
+          "step": 0,
+          "deficit": 0.0,
+          "weight": 0.0
+        },
+        {
+          "step": 10,
+          "deficit": 0.40625,
+          "weight": 0.015624999999999993
+        },
+        {
+          "step": 20,
+          "deficit": 0.0,
+          "weight": 0.023124999999999986
+        },
+        {
+          "step": 30,
+          "deficit": 0.4620535671710968,
+          "weight": 0.07033035671710966
+        },
+        {
+          "step": 40,
+          "deficit": 0.6328125,
+          "weight": 0.1663758920907974
+        },
+        {
+          "step": 50,
+          "deficit": 0.5640624761581421,
+          "weight": 0.29461856800556174
+        },
+        {
+          "step": 60,
+          "deficit": 0.8815104365348816,
+          "weight": 0.4803637523908614
+        },
+        {
+          "step": 70,
+          "deficit": 0.18359375,
+          "weight": 0.6423192748991011
+        },
+        {
+          "step": 80,
+          "deficit": 0.28515625,
+          "weight": 0.7953993179056928
+        },
+        {
+          "step": 90,
+          "deficit": 0.1328125,
+          "weight": 0.9261446023109663
+        },
+        {
+          "step": 100,
+          "deficit": 0.18359375,
+          "weight": 1.044100204835185
+        },
+        {
+          "step": 110,
+          "deficit": 0.0546875,
+          "weight": 1.13893343685456
+        },
+        {
+          "step": 120,
+          "deficit": 0.21692708134651184,
+          "weight": 1.2314927306047112
+        },
+        {
+          "step": 130,
+          "deficit": 0.1458333432674408,
+          "weight": 1.3151234999315762
+        },
+        {
+          "step": 140,
+          "deficit": 0.05859375,
+          "weight": 1.3828874903930681
+        },
+        {
+          "step": 150,
+          "deficit": 0.0989583358168602,
+          "weight": 1.4419945163439478
+        },
+        {
+          "step": 160,
+          "deficit": 0.0078125,
+          "weight": 1.4850613871046516
+        },
+        {
+          "step": 170,
+          "deficit": 0.12606534361839294,
+          "weight": 1.5271214180750539
+        },
+        {
+          "step": 180,
+          "deficit": 0.0,
+          "weight": 1.5557694428513758
+        },
+        {
+          "step": 190,
+          "deficit": 0.12890625,
+          "weight": 1.5865784876724331
+        }
+      ],
+      "strategy_history": [
+        {
+          "update": 100,
+          "cycle": 1,
+          "audit_n": 32,
+          "canonical_correct": 10,
+          "candidate_correct": [
+            10,
+            10
+          ],
+          "distinct_nonempty_cards": 0,
+          "proposal_error": "ValueError"
+        }
+      ],
+      "final_nonempty_card_count": 0,
+      "proposer_cost": [
+        {
+          "prompt_tokens": 171,
+          "generated_tokens": 7,
+          "accepted": false,
+          "elapsed_seconds": 0.34738912992179394
+        }
+      ],
+      "summary": {
+        "train_runtime": 8083.5008,
+        "train_samples_per_second": 0.792,
+        "train_steps_per_second": 0.025,
+        "total_flos": 0.0,
+        "train_loss": 0.6062646626215428,
+        "epoch": 0.04071661237785016,
+        "step": 200
+      }
+    }
+  ],
+  "replay_accounting": {
+    "planned_distinct_samples_per_update": 4,
+    "actual_sampling": "four uniform draws with replacement; reused across four accumulated microsteps",
+    "unique_count_histogram_reconstructed_from_code_seed_and_memory_size": {
+      "3": 3,
+      "4": 197
+    },
+    "reconstruction_not_historical_sample_trace": true,
+    "expected_replay_forward_calls_all_ranks": 3200,
+    "expected_auxiliary_audit_forward_calls_all_ranks": 640
+  },
+  "storage": {
+    "final_allocated_output_bytes": 15052242944,
+    "hard_guard_bytes": 40000000000,
+    "single_file_cap_bytes": 10000000000
+  },
+  "limitations": [
+    "no test or held-out validation evaluation",
+    "no matched GSPO/replay control",
+    "one seed",
+    "no in-stage optimizer or sampler resume; failed stage2 update discarded and recomputed from completed stage1",
+    "both local strategy proposals invalid; after refresh both selected cards empty",
+    "audit uses training memories with resampling, not clinical retention accuracy",
+    "nonzero dual and combined gradients do not isolate protective gradient benefit",
+    "replay distinctness protocol deviation: with-replacement draws",
+    "patient/case and near-duplicate isolation unverified"
+  ]
+}

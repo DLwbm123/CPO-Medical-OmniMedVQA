@@ -10,10 +10,12 @@ from .decision_loss import aligned_response_logits
 from .scoring import score_response
 
 
-def make_inputs(processor, item, strategy='', device='cpu'):
+def make_inputs(processor, item, strategy='', device='cpu', *, append_strategy=False):
     config = yaml.safe_load((Path(__file__).parent / 'prompts.yaml').read_text())
     question = re.sub(r'<image(?:[_ ]?\d+)?>', '', item['question']).strip()
-    text = Environment(undefined=StrictUndefined, autoescape=False).from_string(config['canonical_user']).render(question=question, strategy=strategy)
+    text = Environment(undefined=StrictUndefined, autoescape=False).from_string(config['canonical_user']).render(question=question, strategy='' if append_strategy else strategy)
+    if append_strategy and strategy:
+        text += '\nAnswering strategy:\n' + strategy
     with Image.open(item['image']) as source:
         image = source.convert('RGB')
     messages = [{'role': 'system', 'content': config['system']}, {'role': 'user', 'content': [{'type': 'image', 'image': image}, {'type': 'text', 'text': text}]}]

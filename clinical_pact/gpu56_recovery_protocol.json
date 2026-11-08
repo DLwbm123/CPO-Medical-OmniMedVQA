@@ -1,0 +1,15 @@
+{
+  "purpose": "stage-boundary restart of failed stage2 within original experiment budget",
+  "attempt": 2,
+  "first_start_conservative_epoch": 1794128400,
+  "absolute_deadline_epoch": 1794214500,
+  "original_failed_updates": {
+    "stage1_completed": 200,
+    "stage2_discarded": 1
+  },
+  "recovery": "fresh processes, completed original stage1 model/cards/private memory; stage2 optimizer and seed100 sampler restart exactly as boundary protocol; not exact mid-stage resume",
+  "repair": "explicit START_STAGE=2 boundary entry; release stage1 policy reference; fresh process avoids retained stage1 engine state",
+  "cause": "CUDA OOM at second stage2 rollout gather; retained stage1 policy reference found statically, causal contribution not yet measured; concurrent 3.45GiB process also observed in error",
+  "unchanged": "training data, seed, objective, all hyperparameters, 200 stage2 updates, GPUs5/6, 40GB root budget and original absolute clock",
+  "stopping": "same original deadline/root40GB/singlefile10GB; no automatic restart"
+}

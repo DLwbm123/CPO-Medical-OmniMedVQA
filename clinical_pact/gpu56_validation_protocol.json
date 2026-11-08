@@ -1,0 +1,46 @@
+{
+  "purpose": "exploratory fixed validation stage comparison after completed development training",
+  "scope": "not a matched-control or confirmatory efficacy result; validation has been used in earlier project diagnostics",
+  "seed": 100,
+  "GPUs": [
+    5,
+    6
+  ],
+  "model_stage_by_rank": {
+    "0": 1,
+    "1": 2
+  },
+  "tasks": [
+    {
+      "name": "MedicalVQA_MedBook",
+      "n": 130
+    },
+    {
+      "name": "MedicalVQA_Pathology",
+      "n": 6259
+    }
+  ],
+  "split": "validation only, full prepared split in fixed stored order; never test",
+  "decoder": "batch1, canonical prompt, greedy num_beams1, repetition1, bf16 SDPA, each checkpoint own processor, image min128/max512 times28squared pixels",
+  "max_new_tokens": 128,
+  "metrics": [
+    "normalized exact match correct/n",
+    "actual EOS count",
+    "generated token total",
+    "stage2 minus stage1 aggregate accuracy"
+  ],
+  "selection": "no checkpoint, prompt, method or hyperparameter selection; both fixed stage models reported even if negative",
+  "data_output": "aggregate only; no question/image/per-example prediction storage",
+  "storage": "same original experiment root40GB guard, validation subtree1GB and new file100MB cap; model/data read-only reused",
+  "original_first_start_epoch": 1794128400,
+  "original_absolute_deadline_epoch": 1794214500,
+  "absolute_deadline_epoch": 1794157286,
+  "max_validation_seconds": 14400,
+  "failure": "preserve errors/partial aggregate; no automatic retry or clock reset",
+  "limitations": [
+    "single seed",
+    "no matched GSPO/replay control",
+    "patient/case and near duplicate isolation unverified",
+    "post-training exploratory analysis"
+  ]
+}

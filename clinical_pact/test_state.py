@@ -29,3 +29,40 @@ class StateTests(unittest.TestCase):
         second = random.Random()
         second.setstate(replay_rng)
         self.assertEqual(second.random(), rng.random())
+
+    def test_optimizer_rng_and_scheduler_resume_matches_two_updates(self):
+        from clinical_pact.state import pack_runtime_state, restore_runtime_state
+        torch.manual_seed(40)
+        random.seed(40)
+        model = torch.nn.Linear(2, 1)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)
+        memory = DecisionMemory(2)
+        controller = TaskDualController()
+        pact = pack_state(memory, controller, {'cursor': 1}, ('a', 'b'), 0, random.Random(5).getstate())
+
+        def update(model, optimizer, scheduler):
+            x = torch.randn(3, 2) * random.random()
+            optimizer.zero_grad()
+            model(x).square().mean().backward()
+            optimizer.step()
+            scheduler.step()
+
+        update(model, optimizer, scheduler)
+        weights = {key: value.detach().clone() for key, value in model.state_dict().items()}
+        state = pack_runtime_state(optimizer, scheduler, pact)
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'runtime.pt'
+            atomic_save(state, path)
+            state = torch.load(path, map_location='cpu', weights_only=True)
+        update(model, optimizer, scheduler)
+        expected = {key: value.detach().clone() for key, value in model.state_dict().items()}
+        resumed = torch.nn.Linear(2, 1)
+        resumed.load_state_dict(weights)
+        opt2 = torch.optim.AdamW(resumed.parameters(), lr=0.01)
+        sched2 = torch.optim.lr_scheduler.StepLR(opt2, step_size=1, gamma=0.9)
+        restore_runtime_state(state, opt2, sched2)
+        update(resumed, opt2, sched2)
+        for key, value in resumed.state_dict().items():
+            self.assertTrue(torch.equal(value, expected[key]))
+        self.assertEqual(sched2.state_dict(), scheduler.state_dict())
