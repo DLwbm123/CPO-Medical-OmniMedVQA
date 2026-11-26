@@ -10,7 +10,7 @@ from .decision_loss import aligned_response_logits
 from .scoring import score_response
 
 
-def make_inputs(processor, item, strategy='', device='cpu', *, append_strategy=False, include_image=True):
+def make_inputs(processor, item, strategy='', device='cpu', *, append_strategy=False, include_image=True, assistant_prefix=''):
     config = yaml.safe_load((Path(__file__).parent / 'prompts.yaml').read_text())
     question = re.sub(r'<image(?:[_ ]?\d+)?>', '', item['question']).strip()
     text = Environment(undefined=StrictUndefined, autoescape=False).from_string(config['canonical_user']).render(question=question, strategy='' if append_strategy else strategy)
@@ -22,7 +22,7 @@ def make_inputs(processor, item, strategy='', device='cpu', *, append_strategy=F
             image = source.convert('RGB')
         content.insert(0, {'type': 'image', 'image': image})
     messages = [{'role': 'system', 'content': config['system']}, {'role': 'user', 'content': content}]
-    prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True) + assistant_prefix
     if include_image:
         inputs = processor(text=[prompt], images=[image], padding=False, return_tensors='pt')
     else:

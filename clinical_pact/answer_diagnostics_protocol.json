@@ -1,0 +1,20 @@
+{
+  "scope": "Exploratory fixed-checkpoint answer-format diagnostics on prepared validation only. All checkpoints and data are read-only.",
+  "seed": 100,
+  "worker_count": 4,
+  "max_new_tokens": 128,
+  "checkpoints": [
+    {"name": "shared_medbook_start", "path": "gpu56_development_20261108/stage1/model"},
+    {"name": "plain_gspo_final", "path": "matched_protection_20261108/stage1/model"},
+    {"name": "pact_med_final", "path": "gpu56_development_20261108/stage2/model"},
+    {"name": "untuned_base", "path": "models/base"}
+  ],
+  "tasks": [
+    {"name": "MedicalVQA_MedBook", "n": 130},
+    {"name": "MedicalVQA_Pathology", "n": 6259}
+  ],
+  "medbook": "The frozen canonical greedy scorer plus one-token constrained A-D scores after a fixed assistant prefix, both canonical order and a left-rotation by one position. Boxed or bare exact A-D is valid format, scored independently of correctness.",
+  "pathvqa": "The frozen greedy scorer, split by normalized gold yes/no (3125) versus other short answers (3134). Report yes/no type compliance and generated token total separately from correctness.",
+  "privacy": "Publish aggregates only. Per-row diagnostics contain numeric correctness, type and length metrics without question text, IDs, images or decoded predictions; retain privately.",
+  "max_wall_seconds": 7200
+}

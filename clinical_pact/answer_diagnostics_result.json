@@ -1,0 +1,180 @@
+{
+  "status": {
+    "reason": "completed",
+    "codes": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "elapsed_seconds": 2856.9061331748962
+  },
+  "subsets": {
+    "shared_medbook_start": {
+      "medbook": {
+        "correct": 82,
+        "generated_tokens": 260,
+        "eos_terminated": 130,
+        "valid_answer_type": 130,
+        "forced_correct": 84,
+        "rotated_correct": 77,
+        "both_views_correct": 64,
+        "n": 130
+      },
+      "pathvqa_other": {
+        "correct": 9,
+        "generated_tokens": 9118,
+        "eos_terminated": 3134,
+        "n": 3134
+      },
+      "pathvqa_yes_no": {
+        "correct": 994,
+        "generated_tokens": 6259,
+        "eos_terminated": 3125,
+        "valid_answer_type": 1835,
+        "n": 3125
+      }
+    },
+    "plain_gspo_final": {
+      "medbook": {
+        "correct": 78,
+        "generated_tokens": 265,
+        "eos_terminated": 130,
+        "valid_answer_type": 127,
+        "forced_correct": 83,
+        "rotated_correct": 78,
+        "both_views_correct": 66,
+        "n": 130
+      },
+      "pathvqa_other": {
+        "correct": 158,
+        "generated_tokens": 9494,
+        "eos_terminated": 3134,
+        "n": 3134
+      },
+      "pathvqa_yes_no": {
+        "correct": 1863,
+        "generated_tokens": 6255,
+        "eos_terminated": 3125,
+        "valid_answer_type": 3115,
+        "n": 3125
+      }
+    },
+    "pact_med_final": {
+      "medbook": {
+        "correct": 83,
+        "generated_tokens": 260,
+        "eos_terminated": 130,
+        "valid_answer_type": 130,
+        "forced_correct": 84,
+        "rotated_correct": 80,
+        "both_views_correct": 67,
+        "n": 130
+      },
+      "pathvqa_other": {
+        "correct": 76,
+        "generated_tokens": 13783,
+        "eos_terminated": 3134,
+        "n": 3134
+      },
+      "pathvqa_yes_no": {
+        "correct": 1711,
+        "generated_tokens": 6264,
+        "eos_terminated": 3125,
+        "valid_answer_type": 3115,
+        "n": 3125
+      }
+    },
+    "untuned_base": {
+      "medbook": {
+        "correct": 24,
+        "generated_tokens": 907,
+        "eos_terminated": 130,
+        "valid_answer_type": 45,
+        "forced_correct": 60,
+        "rotated_correct": 61,
+        "both_views_correct": 52,
+        "n": 130
+      },
+      "pathvqa_other": {
+        "correct": 55,
+        "generated_tokens": 14230,
+        "eos_terminated": 3134,
+        "n": 3134
+      },
+      "pathvqa_yes_no": {
+        "correct": 2010,
+        "generated_tokens": 6324,
+        "eos_terminated": 3125,
+        "valid_answer_type": 3118,
+        "n": 3125
+      }
+    }
+  },
+  "paired_from_start": {
+    "plain_gspo_final": {
+      "medbook:correct": {
+        "wrong_to_wrong": 43,
+        "wrong_to_correct": 5,
+        "correct_to_wrong": 9,
+        "correct_to_correct": 73
+      },
+      "medbook:forced_correct": {
+        "wrong_to_wrong": 41,
+        "wrong_to_correct": 5,
+        "correct_to_wrong": 6,
+        "correct_to_correct": 78
+      },
+      "medbook:both_views_correct": {
+        "wrong_to_wrong": 57,
+        "wrong_to_correct": 9,
+        "correct_to_wrong": 7,
+        "correct_to_correct": 57
+      },
+      "pathvqa_yes_no:correct": {
+        "wrong_to_wrong": 810,
+        "wrong_to_correct": 1321,
+        "correct_to_wrong": 452,
+        "correct_to_correct": 542
+      },
+      "pathvqa_other:correct": {
+        "wrong_to_wrong": 2974,
+        "wrong_to_correct": 151,
+        "correct_to_wrong": 2,
+        "correct_to_correct": 7
+      }
+    },
+    "pact_med_final": {
+      "medbook:correct": {
+        "wrong_to_wrong": 41,
+        "wrong_to_correct": 7,
+        "correct_to_wrong": 6,
+        "correct_to_correct": 76
+      },
+      "medbook:forced_correct": {
+        "wrong_to_wrong": 40,
+        "wrong_to_correct": 6,
+        "correct_to_wrong": 6,
+        "correct_to_correct": 78
+      },
+      "medbook:both_views_correct": {
+        "wrong_to_wrong": 57,
+        "wrong_to_correct": 9,
+        "correct_to_wrong": 6,
+        "correct_to_correct": 58
+      },
+      "pathvqa_yes_no:correct": {
+        "wrong_to_wrong": 855,
+        "wrong_to_correct": 1276,
+        "correct_to_wrong": 559,
+        "correct_to_correct": 435
+      },
+      "pathvqa_other:correct": {
+        "wrong_to_wrong": 3054,
+        "wrong_to_correct": 71,
+        "correct_to_wrong": 4,
+        "correct_to_correct": 5
+      }
+    }
+  }
+}

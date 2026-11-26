@@ -31,7 +31,7 @@ def load_checkpoint(model_path, device, seed):
     return model, processor
 
 
-def predict_answer(model, processor, item, device, max_new_tokens, *, include_image=True):
+def generate_answer(model, processor, item, device, max_new_tokens, *, include_image=True):
     inputs = make_inputs(processor, item, device=device, include_image=include_image)
     with torch.inference_mode():
         tokens = model.generate(**inputs, do_sample=False, num_beams=1,
@@ -39,11 +39,15 @@ def predict_answer(model, processor, item, device, max_new_tokens, *, include_im
                                 use_cache=True, synced_gpus=False)
     response = tokens[:, inputs['input_ids'].shape[1]:]
     text = processor.tokenizer.decode(response[0], skip_special_tokens=True)
-    return {
+    return text, {
         'correct': int(score_response(text, item['answer'])),
         'generated_tokens': response.numel(),
         'eos_terminated': int(bool(response.numel()) and int(response[0, -1]) == processor.tokenizer.eos_token_id),
     }
+
+
+def predict_answer(model, processor, item, device, max_new_tokens, *, include_image=True):
+    return generate_answer(model, processor, item, device, max_new_tokens, include_image=include_image)[1]
 
 
 def main():
