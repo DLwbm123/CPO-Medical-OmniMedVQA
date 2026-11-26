@@ -13,6 +13,39 @@ from .multimodal import make_inputs
 from .scoring import score_response
 
 
+def load_checkpoint(model_path, device, seed):
+    torch.cuda.set_device(device)
+    set_seed(seed)
+    torch.use_deterministic_algorithms(True)
+    processor = AutoProcessor.from_pretrained(model_path, local_files_only=True,
+                                             min_pixels=128*28*28, max_pixels=512*28*28)
+    processor.tokenizer.padding_side = 'left'
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        model_path, dtype=torch.bfloat16, attn_implementation='sdpa',
+        local_files_only=True).to(device).eval()
+    for parameter in model.parameters():
+        parameter.requires_grad_(False)
+    config = model.generation_config
+    if config.forced_bos_token_id is not None or config.forced_eos_token_id is not None or config.suppress_tokens or config.begin_suppress_tokens:
+        raise ValueError('implicit generation constraints are outside the protocol')
+    return model, processor
+
+
+def predict_answer(model, processor, item, device, max_new_tokens, *, include_image=True):
+    inputs = make_inputs(processor, item, device=device, include_image=include_image)
+    with torch.inference_mode():
+        tokens = model.generate(**inputs, do_sample=False, num_beams=1,
+                                max_new_tokens=max_new_tokens, repetition_penalty=1.0,
+                                use_cache=True, synced_gpus=False)
+    response = tokens[:, inputs['input_ids'].shape[1]:]
+    text = processor.tokenizer.decode(response[0], skip_special_tokens=True)
+    return {
+        'correct': int(score_response(text, item['answer'])),
+        'generated_tokens': response.numel(),
+        'eos_terminated': int(bool(response.numel()) and int(response[0, -1]) == processor.tokenizer.eos_token_id),
+    }
+
+
 def main():
     root = Path(os.environ['OUT'])
     destination = root / 'validation'
@@ -21,21 +54,7 @@ def main():
     stage = rank + 1
     if rank not in (0, 1):
         raise ValueError('exactly two checkpoint workers are supported')
-    torch.cuda.set_device(rank)
-    set_seed(protocol['seed'])
-    torch.use_deterministic_algorithms(True)
-    model_path = root / f'stage{stage}' / 'model'
-    processor = AutoProcessor.from_pretrained(model_path, local_files_only=True,
-                                             min_pixels=128*28*28, max_pixels=512*28*28)
-    processor.tokenizer.padding_side = 'left'
-    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
-        model_path, dtype=torch.bfloat16, attn_implementation='sdpa',
-        local_files_only=True).to(rank).eval()
-    for parameter in model.parameters():
-        parameter.requires_grad_(False)
-    config = model.generation_config
-    if config.forced_bos_token_id is not None or config.forced_eos_token_id is not None or config.suppress_tokens or config.begin_suppress_tokens:
-        raise ValueError('implicit generation constraints are outside the protocol')
+    model, processor = load_checkpoint(root / f'stage{stage}' / 'model', rank, protocol['seed'])
     result = {'stage': stage, 'scope': protocol['scope'], 'datasets': []}
     started = time.monotonic()
     for task in protocol['tasks']:
@@ -46,18 +65,10 @@ def main():
                   'correct': 0, 'eos_terminated': 0, 'generated_tokens': 0}
         result['datasets'].append(metric)
         for item in items:
-            inputs = make_inputs(processor, item, device=rank)
-            with torch.inference_mode():
-                tokens = model.generate(**inputs, do_sample=False, num_beams=1,
-                                        max_new_tokens=protocol['max_new_tokens'],
-                                        repetition_penalty=1.0, use_cache=True,
-                                        synced_gpus=False)
-            response = tokens[:, inputs['input_ids'].shape[1]:]
-            text = processor.tokenizer.decode(response[0], skip_special_tokens=True)
-            metric['correct'] += int(score_response(text, item['answer']))
+            scored = predict_answer(model, processor, item, rank, protocol['max_new_tokens'])
+            for key, value in scored.items():
+                metric[key] += value
             metric['evaluated'] += 1
-            metric['generated_tokens'] += response.numel()
-            metric['eos_terminated'] += int(bool(response.numel()) and int(response[0, -1]) == processor.tokenizer.eos_token_id)
             if metric['evaluated'] % 100 == 0 or metric['evaluated'] == task['n']:
                 save_json(destination / f'stage{stage}_progress.json', result)
         metric['accuracy'] = metric['correct'] / metric['evaluated']

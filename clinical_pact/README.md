@@ -15,3 +15,5 @@ The newer two-GPU driver is a bounded procedural-grammar strategy variant, not t
 The completed exploratory checkpoint comparison is reported in [GPU56_VALIDATION_RESULT.md](GPU56_VALIDATION_RESULT.md): PathVQA validation increased from 1,003/6,259 to 1,787/6,259, while MedBook changed from 82/130 to 83/130. This is one run before/after new-task training, without a matched GSPO/replay control; it does not attribute benefit to PACT or establish successful dynamic strategy discovery.
 
 The subsequent [matched-start control protocol](MATCHED_CONTROLS_PROTOCOL.md) freezes plain GSPO and unit-weight margin protection from the same initial checkpoint. These are new comparison conditions; no control efficacy result is implied by their code or registration.
+
+The [retained-checkpoint evaluation](RETAINED_CHECKPOINT_SCORING_ZH.md) completes the plain-GSPO comparison and reports paired MedBook correctness, the upstream option-spacing audit and a text-only diagnostic. The observed single-seed trade-off is +3.85 points on MedBook and −3.74 points on PathVQA for PACT-Med relative to plain GSPO. The fixed-margin control has no validation result.

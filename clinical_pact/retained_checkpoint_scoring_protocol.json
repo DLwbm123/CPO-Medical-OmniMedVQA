@@ -1,0 +1,23 @@
+{
+  "scope": "One exploratory matched-start checkpoint comparison and a paired MedBook image-ablation diagnostic. Existing checkpoints and validation splits are read-only. No training or test access.",
+  "seed": 100,
+  "worker_count": 3,
+  "max_new_tokens": 128,
+  "decoder": "Original single-example canonical greedy protocol, bf16 SDPA, one beam, repetition penalty 1.0, checkpoint-specific processor, original pixel limits and normalized exact-match scorer.",
+  "tasks": [
+    {"name": "MedicalVQA_MedBook", "n": 130},
+    {"name": "MedicalVQA_Pathology", "n": 6259}
+  ],
+  "checkpoints": [
+    {"name": "shared_medbook_start", "path": "gpu56_development_20261108/stage1/model"},
+    {"name": "plain_gspo_final", "path": "matched_protection_20261108/stage1/model"},
+    {"name": "pact_med_final", "path": "gpu56_development_20261108/stage2/model"}
+  ],
+  "pathvqa": "Full validation for plain GSPO in disjoint round-robin shards, reusing prior full validation counts for the initial and adaptive checkpoints.",
+  "medbook": "Full validation for all checkpoints. Primary input uses original images, with paired text-only diagnostic omitting the image item while preserving prompt wording. Compare correctness transitions from the shared checkpoint and across image conditions.",
+  "spacing_audit": "Before scoring, compared prepared train and validation against MRCL training revisions 0a4545c and 2ad8a8d. All 1210 train and 130 validation active prompts and labels match the correction, and A-D option whitespace normalization is a no-op.",
+  "results": "Aggregate counts and token totals only for release. Correctness bits in validation order stay in the private run directory; no images, answers, sample IDs or predictions in outputs.",
+  "max_wall_seconds": 3600,
+  "output_guard_bytes": 1000000000,
+  "single_file_guard_bytes": 100000000
+}

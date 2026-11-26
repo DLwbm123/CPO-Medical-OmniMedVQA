@@ -1,0 +1,126 @@
+{
+  "status": {
+    "reason": "completed",
+    "codes": [
+      0,
+      0,
+      0
+    ],
+    "elapsed_seconds": 744.5925822257996
+  },
+  "medbook": {
+    "shared_medbook_start": {
+      "checkpoint": "shared_medbook_start",
+      "n": 130,
+      "image": {
+        "correct": 82,
+        "generated_tokens": 260,
+        "eos_terminated": 130
+      },
+      "text_only": {
+        "correct": 77,
+        "generated_tokens": 260,
+        "eos_terminated": 130
+      }
+    },
+    "plain_gspo_final": {
+      "checkpoint": "plain_gspo_final",
+      "n": 130,
+      "image": {
+        "correct": 78,
+        "generated_tokens": 265,
+        "eos_terminated": 130
+      },
+      "text_only": {
+        "correct": 68,
+        "generated_tokens": 286,
+        "eos_terminated": 130
+      }
+    },
+    "pact_med_final": {
+      "checkpoint": "pact_med_final",
+      "n": 130,
+      "image": {
+        "correct": 83,
+        "generated_tokens": 260,
+        "eos_terminated": 130
+      },
+      "text_only": {
+        "correct": 77,
+        "generated_tokens": 260,
+        "eos_terminated": 130
+      }
+    }
+  },
+  "medbook_transitions": {
+    "shared_medbook_start": {
+      "image_to_text_only": {
+        "wrong_to_wrong": 37,
+        "wrong_to_correct": 11,
+        "correct_to_wrong": 16,
+        "correct_to_correct": 66
+      }
+    },
+    "plain_gspo_final": {
+      "image_to_text_only": {
+        "wrong_to_wrong": 39,
+        "wrong_to_correct": 13,
+        "correct_to_wrong": 23,
+        "correct_to_correct": 55
+      },
+      "initial_to_final_with_image": {
+        "wrong_to_wrong": 43,
+        "wrong_to_correct": 5,
+        "correct_to_wrong": 9,
+        "correct_to_correct": 73
+      }
+    },
+    "pact_med_final": {
+      "image_to_text_only": {
+        "wrong_to_wrong": 33,
+        "wrong_to_correct": 14,
+        "correct_to_wrong": 20,
+        "correct_to_correct": 63
+      },
+      "initial_to_final_with_image": {
+        "wrong_to_wrong": 41,
+        "wrong_to_correct": 7,
+        "correct_to_wrong": 6,
+        "correct_to_correct": 76
+      }
+    }
+  },
+  "pathvqa_plain_gspo": {
+    "correct": 2021,
+    "generated_tokens": 15749,
+    "eos_terminated": 6259,
+    "n": 6259
+  },
+  "allocated_output_bytes": 446464,
+  "medbook_spacing_audit": {
+    "upstream_original_revision": "0a4545c",
+    "upstream_corrected_revision": "2ad8a8d",
+    "upstream_training_items": 1374,
+    "upstream_correct_option_double_spaces_corrected": 1374,
+    "prepared_train_prompts_matching_corrected": 1210,
+    "prepared_validation_prompts_matching_corrected": 130,
+    "prepared_train_answers_matching_corrected": 1210,
+    "prepared_validation_answers_matching_corrected": 130,
+    "prepared_prompts_changed_by_option_whitespace_normalization": 0
+  },
+  "historical_pathvqa_validation": {
+    "source": "GPU56_VALIDATION_RESULT.md",
+    "n": 6259,
+    "shared_medbook_start_correct": 1003,
+    "pact_med_final_correct": 1787
+  },
+  "historical_modality_gspo_xray": {
+    "source": "retained aggregate and paired scored records from original modality GSPO run",
+    "n": 777,
+    "xray_stage_correct": 716,
+    "after_dermoscopy_correct": 690,
+    "after_dermoscopy_correct_to_wrong": 33,
+    "after_dermoscopy_wrong_to_correct": 7,
+    "final_correct": 701
+  }
+}

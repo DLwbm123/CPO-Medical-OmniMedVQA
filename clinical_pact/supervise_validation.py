@@ -14,7 +14,7 @@ resource.setrlimit(resource.RLIMIT_FSIZE, (100000000, 100000000))
 jobs = []
 started = time.time()
 assert started < protocol['absolute_deadline_epoch']
-for rank in (0, 1):
+for rank in range(protocol.get('worker_count', 2)):
     env = os.environ.copy()
     env['RANK'] = str(rank)
     log = (destination / f'worker{rank}.log').open('x')
