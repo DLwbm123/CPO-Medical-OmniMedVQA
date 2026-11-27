@@ -46,20 +46,22 @@ class FixedPromptControlTrainer(DevelopmentTrainer):
         return FirstStageRolloutTrainer._generate_and_score_completions(self, inputs)
 
 
-def control_training_args(destination, updates=200):
+def control_training_args(destination, updates=200, seed=100, *, single_gpu=False):
     ds = {'bf16': {'enabled': True}, 'train_micro_batch_size_per_gpu': 'auto',
           'gradient_accumulation_steps': 'auto', 'train_batch_size': 'auto',
           'zero_optimization': {'stage': 3, 'overlap_comm': False, 'contiguous_gradients': True,
                                 'reduce_bucket_size': 10000000, 'stage3_prefetch_bucket_size': 10000000,
                                 'stage3_param_persistence_threshold': 100000,
                                 'stage3_gather_16bit_weights_on_model_save': True}, 'gradient_clipping': 'auto'}
+    if single_gpu:
+        ds['zero_optimization']['sub_group_size'] = 100_000_000
     return GRPOConfig(output_dir=str(destination), max_steps=updates,
-                      per_device_train_batch_size=4, gradient_accumulation_steps=4,
+                      per_device_train_batch_size=8 if single_gpu else 4, gradient_accumulation_steps=4,
                       steps_per_generation=1, num_generations=8, num_iterations=1,
                       learning_rate=5e-6, bf16=True, full_determinism=True,
                       gradient_checkpointing=True, gradient_checkpointing_kwargs={'use_reentrant': False},
                       max_completion_length=128, importance_sampling_level='sequence', loss_type='grpo',
-                      beta=0., temperature=1., repetition_penalty=1., seed=100, data_seed=100,
+                      beta=0., temperature=1., repetition_penalty=1., seed=seed, data_seed=seed,
                       deepspeed=ds, report_to='none', logging_steps=1, save_strategy='no',
                       remove_unused_columns=False, dataloader_num_workers=0,
                       model_init_kwargs={'torch_dtype': 'bfloat16', 'attn_implementation': 'sdpa', 'local_files_only': True})
