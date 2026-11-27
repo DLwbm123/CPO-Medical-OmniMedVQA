@@ -1,0 +1,21 @@
+{
+  "scope": "Matched-start exploratory test of semantic replay. Evaluate semantic margin before the prespecified CE and KL contrasts using the same answer views.",
+  "arms": ["semantic_margin", "answer_ce", "answer_kl"],
+  "seed": 100,
+  "updates": 200,
+  "memory": "Reuse the historical 338 MedBook candidates. Preserve the two answer-identity views only when the initial checkpoint predicts both correctly. Use this same fixed memory for all new arms.",
+  "minimum_reference_questions": 64,
+  "margin": 0.25,
+  "flip_budget": 0.02,
+  "ema_decay": 0.5,
+  "dual_rate": 0.5,
+  "dual_cap": 1.0,
+  "audit_interval": 10,
+  "audit_per_rank": 16,
+  "replay_per_rank": 2,
+  "fixed_control_weight": 1.0,
+  "reference_and_validation": "One initial full two-view memory audit, then 32 independently sampled views per audit. Replay samples uniform with replacement, four global per optimizer update, reused across four microsteps. Full validation only on the prepared splits. No test access or test-based selection.",
+  "evidence_gate": "Compare to the previously retained GSPO and original PACT. Seek PathVQA >=31.29% and reduced semantic flips against the diagnostic shared checkpoint. Treat comparisons to the filtered memory, different objective, schedule and audit as exploratory. Gate gradient-update intervention on the observed evidence.",
+  "max_wall_seconds": 43200,
+  "output_guard_bytes": 40000000000
+}

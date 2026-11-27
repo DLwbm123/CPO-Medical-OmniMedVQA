@@ -46,6 +46,25 @@ class FixedPromptControlTrainer(DevelopmentTrainer):
         return FirstStageRolloutTrainer._generate_and_score_completions(self, inputs)
 
 
+def control_training_args(destination, updates=200):
+    ds = {'bf16': {'enabled': True}, 'train_micro_batch_size_per_gpu': 'auto',
+          'gradient_accumulation_steps': 'auto', 'train_batch_size': 'auto',
+          'zero_optimization': {'stage': 3, 'overlap_comm': False, 'contiguous_gradients': True,
+                                'reduce_bucket_size': 10000000, 'stage3_prefetch_bucket_size': 10000000,
+                                'stage3_param_persistence_threshold': 100000,
+                                'stage3_gather_16bit_weights_on_model_save': True}, 'gradient_clipping': 'auto'}
+    return GRPOConfig(output_dir=str(destination), max_steps=updates,
+                      per_device_train_batch_size=4, gradient_accumulation_steps=4,
+                      steps_per_generation=1, num_generations=8, num_iterations=1,
+                      learning_rate=5e-6, bf16=True, full_determinism=True,
+                      gradient_checkpointing=True, gradient_checkpointing_kwargs={'use_reentrant': False},
+                      max_completion_length=128, importance_sampling_level='sequence', loss_type='grpo',
+                      beta=0., temperature=1., repetition_penalty=1., seed=100, data_seed=100,
+                      deepspeed=ds, report_to='none', logging_steps=1, save_strategy='no',
+                      remove_unused_columns=False, dataloader_num_workers=0,
+                      model_init_kwargs={'torch_dtype': 'bfloat16', 'attn_implementation': 'sdpa', 'local_files_only': True})
+
+
 def main():
     rank = int(os.environ['RANK'])
     torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
@@ -73,22 +92,7 @@ def main():
                                              min_pixels=128*28*28, max_pixels=512*28*28)
     processor.tokenizer.padding_side = 'left'
     rows = list(load_split(root / 'data/prepared/MedicalVQA_Pathology', 'train'))
-    ds = {'bf16': {'enabled': True}, 'train_micro_batch_size_per_gpu': 'auto',
-          'gradient_accumulation_steps': 'auto', 'train_batch_size': 'auto',
-          'zero_optimization': {'stage': 3, 'overlap_comm': False, 'contiguous_gradients': True,
-                                'reduce_bucket_size': 10000000, 'stage3_prefetch_bucket_size': 10000000,
-                                'stage3_param_persistence_threshold': 100000,
-                                'stage3_gather_16bit_weights_on_model_save': True}, 'gradient_clipping': 'auto'}
-    args = GRPOConfig(output_dir=str(destination), max_steps=200,
-                      per_device_train_batch_size=4, gradient_accumulation_steps=4,
-                      steps_per_generation=1, num_generations=8, num_iterations=1,
-                      learning_rate=5e-6, bf16=True, full_determinism=True,
-                      gradient_checkpointing=True, gradient_checkpointing_kwargs={'use_reentrant': False},
-                      max_completion_length=128, importance_sampling_level='sequence', loss_type='grpo',
-                      beta=0., temperature=1., repetition_penalty=1., seed=100, data_seed=100,
-                      deepspeed=ds, report_to='none', logging_steps=1, save_strategy='no',
-                      remove_unused_columns=False, dataloader_num_workers=0,
-                      model_init_kwargs={'torch_dtype': 'bfloat16', 'attn_implementation': 'sdpa', 'local_files_only': True})
+    args = control_training_args(destination)
     trainer = FixedPromptControlTrainer(model=str(source), args=args, processing_class=processor,
                                        reward_funcs=reward, train_dataset=Images(rows, templates),
                                        strategy_cycle=StrategyCycle(('', '')), refresh_factory=None,

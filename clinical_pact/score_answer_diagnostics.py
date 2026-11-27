@@ -21,11 +21,27 @@ def evaluate(destination, protocol, rank):
     ids = choice_token_ids(processor.tokenizer)
     report = {'checkpoint': checkpoint['name'], 'subsets': {}}
     private = {}
+    if protocol.get('sharded_checkpoint'):
+        from .semantic_replay import known_views
+
+        run = Path(os.environ['OUT'])
+        known = known_views(Path(os.environ['REFERENCE']))
+        reference = json.loads((run / 'private' / 'reference.json').read_text())
+        audit = Counter(n=0, flips=0)
+        with torch.inference_mode():
+            for index in list(reference)[rank::protocol['worker_count']]:
+                view, target = known[int(index)]
+                logits = choice_logits(model, processor, view, rank, ids)
+                audit.update(n=1, flips=int(int(logits.argmax()) != target))
+        report['memory_audit'] = dict(audit)
     for task in protocol['tasks']:
         rows = list(load_split(root / 'data/prepared' / task['name'], 'validation'))
         if len(rows) != task['n'] or len({item['id'] for item in rows}) != task['n']:
             raise ValueError('unexpected validation cardinality')
-        for i, item in enumerate(rows, 1):
+        assigned = list(enumerate(rows))
+        if protocol.get('sharded_checkpoint'):
+            assigned = assigned[rank::protocol['worker_count']]
+        for i, (row_index, item) in enumerate(assigned, 1):
             text, scored = generate_answer(model, processor, item, rank, protocol['max_new_tokens'])
             candidate = answer_candidate(text)
             if task['name'] == 'MedicalVQA_MedBook':
@@ -45,8 +61,8 @@ def evaluate(destination, protocol, rank):
                     scored['valid_answer_type'] = int(candidate in ('yes', 'no'))
             scored['n'] = 1
             report['subsets'].setdefault(group, Counter()).update(scored)
-            private.setdefault(group, []).append(scored)
-            if i % 200 == 0 or i == len(rows):
+            private.setdefault(group, []).append({**scored, 'row_index': row_index})
+            if i % 200 == 0 or i == len(assigned):
                 write_json(destination / f'worker{rank}_progress.json', report)
     write_json(destination / 'private' / f'worker{rank}.json', private)
     write_json(destination / f'worker{rank}.json', report)
@@ -78,10 +94,35 @@ def aggregate(destination, protocol):
     write_json(destination / 'aggregate.json', {'status': status, 'subsets': reports, 'paired_from_start': paired})
 
 
+def aggregate_shards(destination, protocol):
+    reports = {}
+    metrics = {}
+    memory = Counter()
+    for rank in range(protocol['worker_count']):
+        summary = json.loads((destination / f'worker{rank}.json').read_text())
+        memory.update(summary['memory_audit'])
+        for key, counter in summary['subsets'].items():
+            reports.setdefault(key, Counter()).update(counter)
+        rows = json.loads((destination / 'private' / f'worker{rank}.json').read_text())
+        for key, values in rows.items():
+            metrics.setdefault(key, []).extend(values)
+    for key, n in [('medbook', 130), ('pathvqa_yes_no', 3125), ('pathvqa_other', 3134)]:
+        if reports[key]['n'] != n or len({record['row_index'] for record in metrics[key]}) != n:
+            raise ValueError('missing or duplicate validation rows')
+        metrics[key].sort(key=lambda record: record['row_index'])
+    write_json(destination / 'private' / 'merged.json', metrics)
+    expected = json.loads((Path(os.environ['OUT']) / 'calibration.json').read_text())['eligible_questions'] * 2
+    if memory['n'] != expected:
+        raise ValueError('incomplete final memory audit')
+    write_json(destination / 'aggregate.json', {'subsets': reports, 'memory_audit': dict(memory)})
+
+
 if __name__ == '__main__':
-    destination = Path(os.environ['OUT']) / 'validation'
+    destination = Path(os.environ.get('EVAL_DIR', Path(os.environ['OUT']) / 'validation'))
     protocol = json.loads((destination / 'protocol.json').read_text())
     if 'RANK' in os.environ:
         evaluate(destination, protocol, int(os.environ['RANK']))
+    elif protocol.get('sharded_checkpoint'):
+        aggregate_shards(destination, protocol)
     else:
         aggregate(destination, protocol)
