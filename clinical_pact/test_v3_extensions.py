@@ -1,7 +1,10 @@
+import json
+import sys
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import torch
 import torch.distributed as dist
@@ -9,9 +12,9 @@ import torch.multiprocessing as mp
 
 from clinical_pact.decision_fisher import FisherPenalty, global_top_indices, merge_fisher
 from clinical_pact.dynamic_sampling import uniform_rewards
-from clinical_pact.fisher_boundary import calibrate
-from clinical_pact.retention_reward import sampled_log_ratio, shape_rewards, unpadded_equal_prefixes
-from clinical_pact.v3_eval import categorical_kl
+from clinical_pact.fisher_boundary import calibrate, shared_gamma
+from clinical_pact.rollout_inputs import unpadded_equal_prefixes
+from clinical_pact.v3_eval import categorical_kl, frozen_retention_metrics, restore_medbook_cache, save_medbook_cache
 
 
 def check_shards(rank, store, state_path):
@@ -39,10 +42,13 @@ def check_shards(rank, store, state_path):
         indices = torch.tensor([0, 1], dtype=torch.int32) + rank*2
         path = Path(state_path)/f'{rank}.pt'
         torch.save({'rank':rank, 'world_size':2, 'entries':{'embed.weight':(indices, f, reference)}}, path)
-        optimizer = SimpleNamespace(_get_fp32_grad_state_partition=lambda p, **_: (gradient, 0))
-        engine = SimpleNamespace(module=model, optimizer=optimizer, device='cpu')
+        engine = SimpleNamespace(module=model, device='cpu')
         penalty = FisherPenalty(path, gamma=.25)
-        actual_energy = penalty.apply(engine, .5, audit=True)
+        api = SimpleNamespace(safe_get_local_grad=lambda p:gradient.clone(),
+                              safe_set_local_grad=lambda p,value:gradient.copy_(value),
+                              safe_get_local_fp32_param=lambda p:p.ds_tensor)
+        with patch.dict(sys.modules, {'deepspeed.utils':api}):
+            actual_energy = penalty.apply(engine, .5, audit=True)
         current = parameter.ds_tensor.clone().requires_grad_()
         energy = (f * (current - reference).square()).sum()
         expected_force, = torch.autograd.grad(.25*.5*energy, current)
@@ -53,17 +59,34 @@ def check_shards(rank, store, state_path):
 
 
 class ExtensionTests(unittest.TestCase):
-    def test_retention_is_detached_and_uses_upper_cap(self):
-        raw = torch.tensor([0., 1., 1., 1.])
-        actor = torch.tensor([[4., 1.], [5., 1.], [1., 999.], [-2., 1.]], requires_grad=True)
-        ref = torch.zeros_like(actor)
-        mask = torch.tensor([[1, 1], [1, 1], [1, 0], [1, 0]], dtype=torch.bool)
-        drift = sampled_log_ratio(actor, ref, mask)
-        torch.testing.assert_close(drift, torch.tensor([5., 6., 1., -2.]))
-        self.assertIs(shape_rewards(raw, drift, 0), raw)
-        actual = shape_rewards(raw, drift, .05)
-        torch.testing.assert_close(actual, torch.tensor([0., .9, .95, 1.1]))
-        self.assertFalse(actual.requires_grad)
+    def test_gate_uses_semantic_accuracy_and_task_macro(self):
+        def stage(medbook, pathvqa=None):
+            tasks = {'medbook':{'accuracy':.9, 'all_four_orders_accuracy':medbook}}
+            if pathvqa is not None:
+                tasks['pathvqa'] = {'accuracy':.9, 'yes_no_accuracy':pathvqa}
+            return {'tasks':tasks}
+
+        stages = [stage(.6),stage(.65,.80),stage(.60,.77)]
+        changes = {'medbook':{'unreplayed_all_orders_transitions':{'correct_to_wrong':2,'correct_to_correct':8}},
+                   'pathvqa':{'unreplayed_view_transitions':{'correct_to_wrong':1,'correct_to_correct':99}}}
+        result = frozen_retention_metrics(stages, changes)
+        self.assertAlmostEqual(result['macro_unreplayed_flip_rate'], .105)
+        self.assertAlmostEqual(result['macro_final_minus_peak'], -.04)
+        self.assertTrue(result['measurable_forgetting_gate'])
+
+    def test_shared_medbook_cache_checks_signature(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ('source', 'dest'):
+                (root/name/'private').mkdir(parents=True)
+            (root/'source'/'aggregate.json').write_text('{"tasks":{}}')
+            (root/'source'/'private'/'decisions.json').write_text('{"medbook":{}}')
+            signature = {'version':1}
+            cache = root/'shared'/'eval.json'
+            save_medbook_cache(cache, root/'source', signature)
+            self.assertFalse(restore_medbook_cache(cache, root/'dest', {'version':2}))
+            self.assertTrue(restore_medbook_cache(cache, root/'dest', signature))
+            self.assertEqual(json.loads((root/'dest/private/decisions.json').read_text()), {'medbook':{}})
 
     def test_prefix_batch_guard_and_token_kl(self):
         ids = torch.tensor([[1, 2], [1, 2]])
@@ -110,6 +133,12 @@ class ExtensionTests(unittest.TestCase):
             torch.save({'entries':{'model.language_model.embed_tokens.weight':result}}, out/'private/f2_r0.pt')
             save_file({'model.embed_tokens.weight':current + 1}, out/'weights.safetensors')
             self.assertEqual(calibrate(out, out, 1), .1)
+            protocol = {'seed':100, 'fisher_q':.037, 'fisher_samples':512, 'single_gpu':True,
+                        'fisher_gamma_reference':'shared/gamma.json', 'fisher_calibration_checkpoint':'.'}
+            with self.assertRaises(ValueError):
+                shared_gamma(out, out, out, {**protocol,'seed':101})
+            self.assertEqual(shared_gamma(out, out, out, protocol), .1)
+            self.assertEqual(shared_gamma(out, out, out, {**protocol,'seed':101}), .1)
 
 
 if __name__ == '__main__':

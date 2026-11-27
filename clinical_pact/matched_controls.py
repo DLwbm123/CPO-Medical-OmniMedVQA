@@ -46,7 +46,7 @@ class FixedPromptControlTrainer(DevelopmentTrainer):
         return FirstStageRolloutTrainer._generate_and_score_completions(self, inputs)
 
 
-def control_training_args(destination, updates=200, seed=100, *, single_gpu=False):
+def control_training_args(destination, updates=200, seed=100, *, single_gpu=False, kl_beta=0.):
     ds = {'bf16': {'enabled': True}, 'train_micro_batch_size_per_gpu': 'auto',
           'gradient_accumulation_steps': 'auto', 'train_batch_size': 'auto',
           'zero_optimization': {'stage': 3, 'overlap_comm': False, 'contiguous_gradients': True,
@@ -61,7 +61,7 @@ def control_training_args(destination, updates=200, seed=100, *, single_gpu=Fals
                       learning_rate=5e-6, bf16=True, full_determinism=True,
                       gradient_checkpointing=True, gradient_checkpointing_kwargs={'use_reentrant': False},
                       max_completion_length=128, importance_sampling_level='sequence', loss_type='grpo',
-                      beta=0., temperature=1., repetition_penalty=1., seed=seed, data_seed=seed,
+                      beta=kl_beta, temperature=1., repetition_penalty=1., seed=seed, data_seed=seed,
                       deepspeed=ds, report_to='none', logging_steps=1, save_strategy='no',
                       remove_unused_columns=False, dataloader_num_workers=0,
                       model_init_kwargs={'torch_dtype': 'bfloat16', 'attn_implementation': 'sdpa', 'local_files_only': True})

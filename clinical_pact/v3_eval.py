@@ -4,11 +4,42 @@ import json
 import os
 from pathlib import Path
 import random
+import tempfile
 
 from .answer_decisions import answer_candidate
 from .score_retained_checkpoints import transitions, write_json
 from .scoring import normalize
 from .v3_memory import TASKS, candidate_tokens, decision_views, fp32_scores, memory_pool
+
+
+def medbook_cache_signature(root, reference, config):
+    checkpoint = root/config['checkpoint']
+    paths = sorted(p for p in checkpoint.iterdir() if p.is_file())
+    dataset = root/'data/prepared'/TASKS['medbook']/'jsons'
+    paths += [dataset/'validation/data.json', dataset/'train/data.json', reference/'private_memory.pt']
+    return {'version':1, 'seed':config['seed'], 'n':config['validation_sizes']['medbook'],
+            'probes':config['probe_sizes']['medbook'],
+            'files':[[str(p.relative_to(root)), p.stat().st_size, p.stat().st_mtime_ns] for p in paths]}
+
+
+def restore_medbook_cache(path, dst, signature):
+    if not path.is_file():
+        return False
+    payload = json.loads(path.read_text())
+    if payload['signature'] != signature:
+        return False
+    write_json(dst/'aggregate.json', payload['aggregate'])
+    write_json(dst/'private'/'decisions.json', payload['decisions'])
+    return True
+
+
+def save_medbook_cache(path, dst, signature):
+    payload = {'signature':signature, 'aggregate':json.loads((dst/'aggregate.json').read_text()),
+               'decisions':json.loads((dst/'private'/'decisions.json').read_text())}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, delete=False) as stream:
+        json.dump(payload, stream)
+    Path(stream.name).replace(path)
 
 
 def categorical_kl(actor_logits, reference_logits):
@@ -49,17 +80,26 @@ def evaluate(out, config, rank):
     torch.set_float32_matmul_precision('highest')
     model, processor = load_checkpoint(root/config['checkpoint'], rank, config['seed'])
     size = config['worker_count']
+    precomputed = config.get('precomputed_tasks', {})
     result = {'validation': {}, 'decisions': {}}
     with torch.inference_mode():
         for task in config['tasks']:
+            if task in precomputed and task != 'medbook':
+                continue
             items = list(load_split(root/'data/prepared'/TASKS[task], 'validation'))
             if len(items) != config['validation_sizes'][task]:
                 raise ValueError('unexpected validation count')
             totals = Counter(n=0, correct=0, generated_tokens=0, eos_terminated=0)
+            spec = candidate_tokens(processor.tokenizer, task) if task == 'medbook' else None
             for i, item in enumerate(items[rank::size], 1):
-                text, stats = generate_answer(model, processor, item, rank, 128)
-                totals.update(stats)
-                totals['n'] += 1
+                if task not in precomputed:
+                    text, stats = generate_answer(model, processor, item, rank, 128)
+                    totals.update(stats)
+                    totals['n'] += 1
+                if task == 'medbook':
+                    ok = [int(fp32_scores(model, processor, view, rank, spec).argmax()) == target
+                          for view,target in decision_views([item], task, 4)]
+                    totals.update(all_four_orders_correct=int(all(ok)), four_order_validation_n=1)
                 if task == 'pathvqa':
                     label = normalize(item['answer'])
                     if label in ('yes','no'):
@@ -105,14 +145,24 @@ def aggregate(out, config):
         for k, groups in data['decisions'].items():
             for name, bits in groups.items():
                 decisions.setdefault(k, {}).setdefault(name, []).extend(bits)
+    precomputed = config.get('precomputed_tasks', {})
+    for k, saved in precomputed.items():
+        if saved['n'] != config['validation_sizes'][k]:
+            raise ValueError('precomputed validation denominator changed')
+        stats.setdefault(k, Counter()).update(saved)
     for k, v in stats.items():
         if v['n'] != config['validation_sizes'][k]:
             raise ValueError('incomplete sharded validation')
         v['accuracy'] = v['correct'] / v['n']
-        if k == 'pathvqa':
+        if k == 'medbook':
+            if v['four_order_validation_n'] != v['n']:
+                raise ValueError('incomplete MedBook four-order validation')
+            v['all_four_orders_accuracy'] = v['all_four_orders_correct'] / v['n']
+        if k == 'pathvqa' and k not in precomputed:
             total = {gt: sum(v[f'gold_{gt}_pred_{p}'] for p in ('yes', 'no','other')) for gt in ('yes','no')}
             if list(total.values()) != [1712,1413] or v['other_n'] != 3134:
                 raise ValueError('PathVQA answer-type denominator changed')
+            v['yes_no_accuracy'] = sum(v[f'gold_{gt}_pred_{gt}'] for gt in total)/sum(total.values())
             v['yes_no_balanced_accuracy'] = sum(v[f'gold_{gt}_pred_{gt}']/n for gt,n in total.items()) / 2
             v['predicted_yes_fraction'] = sum(v[f'gold_{gt}_pred_yes'] for gt in total)/sum(total.values())
     for k, groups in decisions.items():
@@ -131,6 +181,28 @@ def aggregate(out, config):
         report['stage_kl'] = {'task':config['kl_task'], 'questions':kl['questions'], 'tokens':kl['tokens'],
                               'mean_token_kl':kl['kl_sum'] / kl['tokens']}
     write_json(out/'aggregate.json', report)
+
+
+def frozen_retention_metrics(stages, changes):
+    fields = {'medbook':'all_four_orders_accuracy', 'pathvqa':'yes_no_accuracy'}
+    matrix = {f's{i}':{task:stage['tasks'][task][field] for task,field in fields.items() if task in stage['tasks']}
+              for i,stage in enumerate(stages, 1)}
+    final_minus_peak = {task:matrix['s3'][task]-max(scores[task] for scores in matrix.values() if task in scores)
+                        for task in fields}
+    rates = {}
+    for task in fields:
+        groups = changes[task]
+        key = 'unreplayed_all_orders_transitions' if task == 'medbook' else 'unreplayed_view_transitions'
+        pair = groups[key]
+        n = pair['correct_to_correct'] + pair['correct_to_wrong']
+        if not n:
+            raise ValueError(f'no initially correct unreplayed {task} items for the gate')
+        rates[task] = pair['correct_to_wrong'] / n
+    macro_flip = sum(rates.values()) / len(fields)
+    macro_delta = sum(final_minus_peak.values()) / len(fields)
+    return {'semantic_validation_matrix':matrix, 'final_minus_peak':final_minus_peak,
+            'macro_final_minus_peak':macro_delta, 'unreplayed_flip_rates':rates, 'macro_unreplayed_flip_rate':macro_flip,
+            'measurable_forgetting_gate':macro_flip >= .10 or macro_delta <= -.03}
 
 
 def stages_summary(out, config):
@@ -159,23 +231,22 @@ def stages_summary(out, config):
             changes[task]['unreplayed_all_orders_transitions'] = transitions(to_bits(before['unreplayed']),to_bits(after['unreplayed']))
     matrix = {f's{i}':{k:v['accuracy'] for k,v in stage['tasks'].items()} for i,stage in enumerate(stages,1)}
     last = matrix['s3']
-    final_minus_peak = {k:last[k]-max(row[k] for row in matrix.values() if k in row) for k in ('medbook','pathvqa')}
+    generation_final_minus_peak = {k:last[k]-max(row[k] for row in matrix.values() if k in row) for k in ('medbook','pathvqa')}
     learning_stage = {'medbook':'s1','pathvqa':'s2','slake':'s3'}
     backward_transfer = sum(last[k]-matrix[learning_stage[k]][k] for k in ('medbook','pathvqa'))/2
     report = {'validation_matrix':matrix,'stages':stages,'old_task_changes':changes,
-        'final_average_accuracy':sum(last.values())/len(last),'final_minus_peak':final_minus_peak,
+        'final_average_accuracy':sum(last.values())/len(last),'generation_final_minus_peak':generation_final_minus_peak,
         'backward_transfer':backward_transfer,'plasticity':{k:matrix[v][k] for k,v in learning_stage.items()}}
-    if config.get('r1_alpha') or config.get('fisher_tr'):
+    report.update(frozen_retention_metrics(stages, changes))
+    if config.get('r1_beta') or config.get('fisher_tr'):
         report['retention_extensions'] = {}
         for i in (2, 3):
             train = json.loads((out/f's{i}'/'training.json').read_text())
             stage = {}
             if config.get('fisher_tr'):
                 stage['fisher_omega_final'] = train['fisher_omega_final']
-            if config.get('r1_alpha'):
-                stage['r1_sampled_log_ratio'] = [{'step':row['step'], 'mean':row['r1/sampled_log_ratio'],
-                    'tie_split_fraction':row['r1/all_correct_tie_split_fraction']}
-                    for row in train['logs'] if 'r1/sampled_log_ratio' in row]
+            if config.get('r1_beta'):
+                stage['r1_kl'] = [{'step':row['step'], 'mean':row['kl']} for row in train['logs'] if 'kl' in row]
             report['retention_extensions'][f's{i}'] = stage
     write_json(out/'aggregate.json', report)
 

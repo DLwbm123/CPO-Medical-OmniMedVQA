@@ -61,10 +61,9 @@ class StepTiming(TrainerCallback):
 
 
 class V3Trainer(FixedPromptControlTrainer):
-    def __init__(self, *args, root, reference, initial, out, protocol, stage, **kwargs):
+    def __init__(self, *args, root, reference, out, protocol, stage, **kwargs):
         super().__init__(*args, old_records=[], control_arm='plain_gspo', **kwargs)
         self.stage, self.out, self.spec = stage, out, protocol
-        self.r1_alpha = float(protocol.get('r1_alpha', 0))
         self.dynamic_sampling = bool(protocol.get('dynamic_sampling'))
         self.dynamic_history = []
         self._dynamic_verifier_inputs = None
@@ -72,14 +71,9 @@ class V3Trainer(FixedPromptControlTrainer):
             self._question_indexes = {row['id']:i for i,row in enumerate(self.train_dataset.rows)}
             if len(self._question_indexes) != len(self.train_dataset):
                 raise ValueError('deterministic resampling requires unique question IDs')
-        self.retention_reference = None
         self.fisher = None
-        if not 0 <= self.r1_alpha <= 0.5:
-            raise ValueError('R1 alpha must preserve nonnegative correct-answer rewards')
-        if self.r1_alpha:
-            from .retention_reward import load_reference
-
-            self.retention_reference = load_reference(self, initial)
+        if protocol['replay_views'] <= 0 or protocol['replay_views'] % self.accelerator.num_processes:
+            raise ValueError('positive replay view count must be divisible by the rank count')
         if protocol.get('fisher_tr'):
             from .decision_fisher import FisherPenalty
 
@@ -114,8 +108,6 @@ class V3Trainer(FixedPromptControlTrainer):
                 counts = torch.tensor(tokens, device=self.accelerator.device)
                 dist.all_reduce(counts)
                 raise UniformGroup(int(counts))
-        if self.r1_alpha and self.model.training:
-            self._r1_prompt_ids = result[0]
         return result
 
     def _generate_and_score_completions(self, inputs):
@@ -136,25 +128,6 @@ class V3Trainer(FixedPromptControlTrainer):
                     'extra_completion_tokens':skip.args[0]})
             finally:
                 self._dynamic_verifier_inputs = None
-
-    def _calculate_rewards(self, inputs, prompts, completions, completion_ids_list):
-        raw = super()._calculate_rewards(inputs, prompts, completions, completion_ids_list)
-        if not self.r1_alpha or not self.model.training:
-            return raw
-        from .retention_reward import sampled_log_ratio, score_rollouts, shape_rewards
-
-        if raw.size(1) != 1:
-            raise ValueError('R1 requires exactly one verifier reward')
-        actor, reference, mask = score_rollouts(self, prompts, self._r1_prompt_ids, completion_ids_list)
-        drift = self.accelerator.gather(sampled_log_ratio(actor, reference, mask))
-        shaped = shape_rewards(raw[:, 0], drift, self.r1_alpha)
-        source = raw[:, 0].view(-1, self.num_generations)
-        groups = shaped.view_as(source)
-        broken_ties = (source == 1).all(dim=1) & (groups.amax(dim=1) > groups.amin(dim=1))
-        metrics = self._metrics['train']
-        metrics['r1/sampled_log_ratio'].append(float(drift.mean()))
-        metrics['r1/all_correct_tie_split_fraction'].append(float(broken_ties.float().mean()))
-        return shaped[:, None]
 
     def _scores(self, model, kind, index):
         item, target = self.pools[kind][index]
@@ -255,12 +228,20 @@ class V3Trainer(FixedPromptControlTrainer):
             engine.backward(loss, **kwargs)
             step, kind, losses = self.bound_step
             coefficient = self.weights[kind]
-            stats = combine_replay_gradient(engine, losses, coefficient, project=self.spec['projection'])
-            if self.fisher and coefficient:
-                self.fisher.apply(engine, coefficient)
-            stats.update(step=step, task=kind)
-            self.gradient_history.append(stats)
+            fisher_coefficient = max(self.weights.values()) if self.fisher else 0.
+            after_projection = (lambda: self.fisher.apply(engine, fisher_coefficient)) if fisher_coefficient else None
+            stats = combine_replay_gradient(engine, losses, coefficient, project=self.spec['projection'],
+                                            after_projection=after_projection)
             engine.step()
+            norm = float(engine.get_global_grad_norm())
+            clip = engine.gradient_clipping()
+            scale = min(1., clip / (norm + 1e-6)) if clip > 0 else 1.
+            retention = stats['preclip_retention_norm']
+            stats.update(step=step, task=kind, preclip_total_norm=norm, clip_scale=scale,
+                         fisher_coefficient=fisher_coefficient, postclip_retention_norm=retention*scale,
+                         retention_to_total_norm=retention/norm if norm else None,
+                         postclip_replay_coefficient=coefficient*scale, postclip_fisher_coefficient=fisher_coefficient*scale)
+            self.gradient_history.append(stats)
 
         wrapper.backward = backward
         self.initialized = True
@@ -278,6 +259,9 @@ def main():
     root, out, reference = (Path(os.environ[k]) for k in ('ROOT', 'OUT', 'REFERENCE'))
     stage = int(os.environ['STAGE'])
     protocol = json.loads((out/'protocol.json').read_text())
+    kl_beta = float(protocol.get('r1_beta', 0.))
+    if protocol.get('r1_alpha') or not 0 <= kl_beta < float('inf'):
+        raise ValueError('use finite nonnegative r1_beta for native TRL KL')
     torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
     dist.init_process_group('nccl')
     torch.set_float32_matmul_precision('highest')
@@ -294,17 +278,21 @@ def main():
     destination = out/f's{stage}'
     destination.mkdir(parents=True, exist_ok=True)
     args = control_training_args(destination, protocol['updates'], protocol['seed'],
-                                 single_gpu=protocol.get('single_gpu', False))
+                                 single_gpu=protocol.get('single_gpu', False), kl_beta=kl_beta)
     common = dict(model=str(initial), args=args, processing_class=processor, reward_funcs=reward,
                   train_dataset=Images(rows, templates), strategy_cycle=StrategyCycle(('', '')),
                   refresh_factory=None, processor=processor)
     if protocol.get('mode') == 'no_memory':
         trainer = FixedPromptControlTrainer(**common, old_records=[], control_arm='plain_gspo')
     else:
-        trainer = V3Trainer(**common, root=root, reference=reference, initial=initial, out=out,
+        trainer = V3Trainer(**common, root=root, reference=reference, out=out,
                             protocol=protocol, stage=stage)
+    if kl_beta:
+        ref = getattr(trainer.ref_model, 'module', trainer.ref_model)
+        if ref is None or Path(ref.config._name_or_path).resolve() != initial.resolve():
+            raise RuntimeError('native TRL KL did not use the stage-start checkpoint')
     trainer.batched_same_prompt_generation = bool(protocol.get('batched_same_prompt_generation'))
-    if any(protocol.get(k) for k in ('r1_alpha','fisher_tr','dynamic_sampling','batched_same_prompt_generation')):
+    if any(protocol.get(k) for k in ('r1_beta','fisher_tr','dynamic_sampling','batched_same_prompt_generation')):
         clock = json.loads((out/'clock.json').read_text())
         trainer.add_callback(StepTiming(destination, clock, protocol, stage))
     trainer.train()

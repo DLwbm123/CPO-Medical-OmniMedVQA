@@ -1,0 +1,11 @@
+{
+  "scope": "Post-training evaluation of the seed-100 three-task no-memory control. Use existing validation scores and add only the paired FP32 historical probes, automatically after the SLAKE endpoint finishes.",
+  "baseline_run": "series_20261127/run2",
+  "pathvqa_run": "revision_20261126/attribution",
+  "validation_sizes": {"medbook":130,"pathvqa":6259,"slake":1053},
+  "probe_sizes": {"medbook":{"candidate":338,"unreplayed":872},"pathvqa":{"candidate":338,"unreplayed":9410}},
+  "shared_medbook_eval_cache": "series_20261127/calibration/medbook_eval.json",
+  "gate": "Macro average of old-task correct-to-wrong rates, using all four orders for MedBook and forced binary answers for PathVQA, at least 0.10, or macro final-minus-peak accuracy <= -0.03. Candidate pools excluded from both probe denominators.",
+  "max_wall_seconds": 57600,
+  "output_guard_bytes": 2000000000
+}

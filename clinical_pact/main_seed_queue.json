@@ -1,0 +1,13 @@
+{
+  "scope": "After a complete, corrected three-task comparison, dispatch the matched repeats in sequence on GPU 5.",
+  "main_run": "run10",
+  "baseline_training_run": "run2",
+  "baseline_report_run": "run3",
+  "lanes": [[5]],
+  "queue": [
+    {"run":"run4","seed":101,"mode":"v3"},
+    {"run":"run5","seed":102,"mode":"v3"},
+    {"run":"run6","seed":101,"mode":"no_memory"},
+    {"run":"run7","seed":102,"mode":"no_memory"}
+  ]
+}

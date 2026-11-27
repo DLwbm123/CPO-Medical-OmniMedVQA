@@ -3,7 +3,7 @@ import torch
 import torch.distributed as dist
 
 
-def combine_replay_gradient(engine, replay_losses, coefficient, *, project=True):
+def combine_replay_gradient(engine, replay_losses, coefficient, *, project=True, after_projection=None):
     from deepspeed.utils import safe_get_local_grad, safe_set_local_grad
 
     optimizer = engine.optimizer
@@ -48,12 +48,29 @@ def combine_replay_gradient(engine, replay_losses, coefficient, *, project=True)
     if not bool(torch.isfinite(stats).all()):
         raise FloatingPointError('nonfinite sharded gradient statistics')
     correction = -dot / old_sq if project and old_sq > 0 and dot < 0 else 0.0
+    retention_scale = coefficient + correction
     for p, grad in zip(params, new, strict=True):
         memory = gradient(p)
         if compact:
             for g, m in zip(grad.split(4_194_304), memory.split(4_194_304), strict=True):
-                m.copy_(g.float().add_(m.float(), alpha=coefficient + correction))
+                m.copy_(g.float().add_(m.float(), alpha=retention_scale))
         else:
-            safe_set_local_grad(p, grad.add_(memory, alpha=coefficient + correction))
+            if after_projection is None:
+                grad.add_(memory, alpha=retention_scale)
+                safe_set_local_grad(p, grad)
+            else:
+                safe_set_local_grad(p, grad.add(memory, alpha=retention_scale))
+    retention_norm = abs(retention_scale) * old_sq ** 0.5
+    if after_projection is not None:
+        after_projection()
+        squared = stats.new_zeros(())
+        for p, original in zip(params, new, strict=True):
+            applied = gradient(p).flatten()
+            for a, b in zip(applied.split(4_194_304), original.flatten().split(4_194_304), strict=True):
+                delta = a.float() - b.float()
+                squared += torch.dot(delta, delta).double()
+        dist.all_reduce(squared, group=optimizer.dp_process_group)
+        retention_norm = float(squared.sqrt())
     return {'dot': dot, 'new_norm': new_sq ** 0.5, 'memory_norm': old_sq ** 0.5,
-            'projection_triggered': bool(correction), 'coefficient': coefficient}
+            'projection_triggered': bool(correction), 'coefficient': coefficient,
+            'projection_coefficient': correction, 'preclip_retention_norm': retention_norm}

@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 import random
+import tempfile
 import time
 
 import torch
@@ -15,33 +16,33 @@ from .data import load_split
 from .decision_fisher import global_top_indices, merge_fisher
 from .score_retained_checkpoints import write_json
 from .scoring import normalize
-from .v3_memory import TASKS, candidate_tokens
+from .v3_memory import TASKS, candidate_tokens, decision_views, fp32_scores, margin
 
 
-def gold_score(model, processor, item, kind, device):
+def eligible_gold_score(model, processor, item, kind, device, tokens):
     from .multimodal import make_inputs
 
-    answer = item['answer'].strip()
-    if kind == 'medbook':
-        _, options = candidate_tokens(processor.tokenizer, kind)
-        target = [options['ABCD'.index(normalize(answer).upper())]]
-    elif normalize(answer) in ('yes', 'no'):
-        _, options = candidate_tokens(processor.tokenizer, kind)
-        target = [options[('yes', 'no').index(normalize(answer))]]
-    else:
-        target = processor.tokenizer.encode(answer, add_special_tokens=False)
-    if not target:
-        raise ValueError('Fisher needs a nonempty gold answer')
+    views = decision_views([item], kind, 4)
+    with torch.no_grad():
+        for view, target in views:
+            logits = fp32_scores(model, processor, view, device, tokens)
+            if not bool(torch.isfinite(logits).all()):
+                raise FloatingPointError('nonfinite Fisher choice logits')
+            correct = (margin(logits, target) > 0).to(torch.int32)
+            dist.all_reduce(correct)
+            if int(correct) not in (0, dist.get_world_size()):
+                raise RuntimeError('Fisher selection differs across ZeRO ranks')
+            if not bool(correct):
+                return None
+    _, target = views[0]
     features = make_inputs(processor, item, device=device, assistant_prefix=PREFIX)
-    gold = torch.tensor([target], device=device)
-    features['input_ids'] = torch.cat((features['input_ids'], gold), dim=1)
-    features['attention_mask'] = torch.ones_like(features['input_ids'])
-    logits = model(**features, use_cache=False, logits_to_keep=len(target)+1).logits[:, :-1]
-    return logits.float().log_softmax(-1).gather(-1, gold[..., None]).sum()
+    logits = model(**features, use_cache=False, logits_to_keep=1).logits[0, -1]
+    return logits.float().log_softmax(-1)[tokens[1][target]]
 
 
 def build(root, out, checkpoint, stage, protocol):
     import deepspeed
+    from deepspeed.utils import safe_get_local_fp32_param, safe_get_local_grad, safe_set_local_grad
     from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
     from transformers.integrations import HfDeepSpeedConfig
 
@@ -65,26 +66,39 @@ def build(root, out, checkpoint, stage, protocol):
     engine, *_ = deepspeed.initialize(model=model, optimizer=optimizer, config=ds_config.config)
     kind = 'medbook' if stage == 2 else 'pathvqa'
     rows = list(load_split(root/'data/prepared'/TASKS[kind], 'train'))
+    if kind == 'pathvqa':
+        rows = [r for r in rows if normalize(r['answer']) in ('yes', 'no')]
     n = protocol['fisher_samples']
     if not 1 <= n <= 512 or not rows:
         raise ValueError('Fisher requires between 1 and 512 training questions')
-    sampled = random.Random(protocol['seed'] + stage).sample(rows, min(n, len(rows)))
+    rows = random.Random(protocol['seed'] + stage).sample(rows, len(rows))
+    tokens = candidate_tokens(processor.tokenizer, kind)
     params = {n:p for n,p in engine.module.named_parameters() if p.requires_grad}
     sizes = {n:max(0, min(p.ds_tensor.numel(), p.ds_numel-rank*p.ds_tensor.numel())) for n,p in params.items()}
     diagonal = torch.zeros(sum(sizes.values()), dtype=torch.float32, device=device)
     parts = dict(zip(sizes, diagonal.split(list(sizes.values())), strict=True))
-    for item in sampled:
+    accepted = 0
+    for examined, item in enumerate(rows, 1):
         # Every rank sees the same observation, so reduce-scatter preserves its gradient before squaring.
         engine.optimizer.zero_grad(set_to_none=True)
-        engine.optimizer.grad_partitions_flat_buffer.zero_()
-        score = gold_score(engine, processor, item, kind, device)
+        score = eligible_gold_score(engine, processor, item, kind, device, tokens)
+        if score is None:
+            continue
         if not bool(torch.isfinite(score)):
             raise FloatingPointError('nonfinite gold answer score during Fisher measurement')
+        if accepted:
+            for p in params.values():
+                safe_set_local_grad(p, safe_get_local_grad(p).zero_())
         engine.backward(score, scale_wrt_gas=False)
         for name, p in params.items():
-            g, _ = engine.optimizer._get_fp32_grad_state_partition(p, release_swap_buffers=False)
-            g = g[:sizes[name]].float()
-            parts[name].addcmul_(g, g, value=1/len(sampled))
+            g = safe_get_local_grad(p)[:sizes[name]]
+            parts[name].addcmul_(g, g)
+        accepted += 1
+        if accepted == n:
+            break
+    if not accepted:
+        raise ValueError('no correct positive-margin choice questions for Fisher')
+    diagonal.div_(accepted)
 
     chosen, mean = global_top_indices(diagonal, protocol['fisher_q'])
     prior = {}
@@ -102,7 +116,8 @@ def build(root, out, checkpoint, stage, protocol):
         if selected.numel() or name in prior:
             weights = parts[name][selected] / mean.float()
             offsets = rank*p.ds_tensor.numel()
-            entries[name] = merge_fisher(prior.get(name), p.ds_tensor.flatten()[:sizes[name]], weights, selected, offsets)
+            master = safe_get_local_fp32_param(p).flatten()[:sizes[name]]
+            entries[name] = merge_fisher(prior.get(name), master, weights, selected, offsets)
         cursor, start_coord = end, start_coord + sizes[name]
     if set(prior) - set(params):
         raise ValueError('canonical Fisher parameter names changed between stages')
@@ -113,7 +128,7 @@ def build(root, out, checkpoint, stage, protocol):
     count = torch.tensor(sum(state[0].numel() for state in entries.values()), device=device)
     dist.all_reduce(count)
     if rank == 0:
-        write_json(out/f'fisher_s{stage}.json', {'task':kind, 'samples':len(sampled),
+        write_json(out/f'fisher_s{stage}.json', {'task':kind, 'samples':accepted, 'examined':examined,
                    'q':protocol['fisher_q'], 'coordinates':int(count), 'seconds':time.monotonic()-start})
     dist.destroy_process_group()
 
@@ -159,11 +174,42 @@ def calibrate(out, checkpoint, ranks):
         return gamma
 
 
+def shared_gamma(out, root, reference, protocol):
+    path = root/protocol['fisher_gamma_reference']
+    recipe = {'seed':100, 'q':protocol['fisher_q'], 'samples':protocol['fisher_samples'],
+              'control':protocol['fisher_calibration_checkpoint'],
+              'boundary':str((reference/'stage1/model').relative_to(root)),
+              'version':'correct-four-order-fp32-anchor-v1'}
+    if not path.exists():
+        if protocol['seed'] != 100:
+            raise ValueError('publish the seed-100 Fisher calibration before launching another seed')
+        ranks = 1 if protocol.get('single_gpu') else 2
+        gamma = calibrate(out, root/recipe['control'], ranks)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, delete=False) as handle:
+            json.dump({**recipe, 'gamma':gamma}, handle)
+        staged = Path(handle.name)
+        try:
+            try:
+                os.link(staged, path)
+            except FileExistsError:
+                pass
+        finally:
+            staged.unlink()
+    saved = json.loads(path.read_text())
+    if any(saved[key] != v for key, v in recipe.items()):
+        raise ValueError('shared gamma was calibrated for a different Fisher recipe')
+    gamma = float(saved['gamma'])
+    if not math.isfinite(gamma) or gamma <= 0 or protocol.get('fisher_gamma') not in (None,gamma):
+        raise ValueError('protocol Fisher gamma does not match the valid shared calibration')
+    return gamma
+
+
 def main():
     out, root, reference = (Path(os.environ[k]) for k in ('OUT','ROOT','REFERENCE'))
     protocol = json.loads((out/'protocol.json').read_text())
     if os.environ.get('FISHER_PHASE') == 'calibrate':
-        gamma = calibrate(out, root/protocol['fisher_calibration_checkpoint'], 1 if protocol.get('single_gpu') else 2)
+        gamma = shared_gamma(out, root, reference, protocol)
         write_json(out/'protocol.json', {**protocol, 'fisher_gamma':gamma})
         return
     stage = int(os.environ['STAGE'])

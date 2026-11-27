@@ -74,27 +74,26 @@ class FisherPenalty:
 
     @torch.no_grad()
     def apply(self, engine, coefficient=0, *, audit=False):
+        from deepspeed.utils import safe_get_local_fp32_param, safe_get_local_grad, safe_set_local_grad
+
         rank = dist.get_rank()
         parameters = dict(engine.module.named_parameters())  # Tied parameters occur once.
-        optimizer = engine.optimizer
         energy = torch.zeros((), device=engine.device, dtype=torch.float64)
         for name, (positions, diagonal, anchors) in self.state['entries'].items():
             p = parameters[name]
-            current = p.ds_tensor.flatten()
-            grad = None
-            if coefficient:
-                grad, _ = optimizer._get_fp32_grad_state_partition(p, release_swap_buffers=False)
-                grad = grad.flatten()
+            current = safe_get_local_fp32_param(p).flatten()
+            grad = safe_get_local_grad(p).flatten() if coefficient else None
             for indices, f, anchor in zip(positions.split(1_048_576), diagonal.split(1_048_576),
                                           anchors.split(1_048_576), strict=True):
                 local = indices.to(engine.device, dtype=torch.long).sub_(rank * current.numel())
                 f, anchor = f.to(engine.device), anchor.to(engine.device)
-                delta = current[local].float() - anchor
+                delta = current[local] - anchor
                 if audit:
                     energy += quadratic(delta, f)[0]
                 if grad is not None:
-                    value = grad[local].float().add_(2 * f * delta, alpha=coefficient * self.gamma)
-                    grad[local] = value.to(grad.dtype)
+                    grad[local] = grad[local].add_(2 * f * delta, alpha=coefficient * self.gamma)
+            if grad is not None:
+                safe_set_local_grad(p, grad)
         if audit:
             dist.all_reduce(energy)
             if not torch.isfinite(energy):

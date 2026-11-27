@@ -3,7 +3,7 @@ from copy import deepcopy
 import torch.distributed as dist
 from trl import GRPOTrainer
 
-from .retention_reward import rollout_prompt_features, unpadded_equal_prefixes
+from .rollout_inputs import rollout_prompt_features, unpadded_equal_prefixes
 
 
 def assign_rank_card(inputs, rank, card_a, card_b, world_size=4):
@@ -54,8 +54,12 @@ class FirstStageRolloutTrainer(GRPOTrainer):
         if len(prompts) != 8//world_size or self.tools:
             raise ValueError('sequential generation requires one complete group and no tools')
         if getattr(self, 'batched_same_prompt_generation', False):
+            import torch
+
             features = rollout_prompt_features(self, prompts)
-            if unpadded_equal_prefixes(features):
+            batchable = torch.tensor(int(unpadded_equal_prefixes(features)), device=self.accelerator.device)
+            dist.all_reduce(batchable, op=dist.ReduceOp.MIN)
+            if bool(batchable):
                 return super()._generate_single_turn(prompts)
         prompt_ids,completion_ids=[],[]
         # Each rank enters the same number of collective gather/generate contexts.
