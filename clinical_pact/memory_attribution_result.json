@@ -1,0 +1,166 @@
+{
+  "status": {
+    "reason": "completed",
+    "codes": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "elapsed_seconds": 707.9581747055054
+  },
+  "checkpoints": {
+    "shared_start": {
+      "retained": {
+        "views": 582,
+        "view_correct": 582,
+        "questions": 291,
+        "both_correct": 291,
+        "view_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 0,
+          "correct_to_correct": 582
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 0,
+          "correct_to_correct": 291
+        }
+      },
+      "never_replayed": {
+        "views": 1744,
+        "view_correct": 1020,
+        "questions": 872,
+        "both_correct": 420,
+        "view_transitions": {
+          "wrong_to_wrong": 724,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 0,
+          "correct_to_correct": 1020
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 452,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 0,
+          "correct_to_correct": 420
+        }
+      }
+    },
+    "plain_gspo": {
+      "retained": {
+        "views": 582,
+        "view_correct": 545,
+        "questions": 291,
+        "both_correct": 263,
+        "view_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 37,
+          "correct_to_correct": 545
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 28,
+          "correct_to_correct": 263
+        }
+      },
+      "never_replayed": {
+        "views": 1744,
+        "view_correct": 1030,
+        "questions": 872,
+        "both_correct": 437,
+        "view_transitions": {
+          "wrong_to_wrong": 613,
+          "wrong_to_correct": 111,
+          "correct_to_wrong": 101,
+          "correct_to_correct": 919
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 392,
+          "wrong_to_correct": 60,
+          "correct_to_wrong": 43,
+          "correct_to_correct": 377
+        }
+      }
+    },
+    "original_pact": {
+      "retained": {
+        "views": 582,
+        "view_correct": 563,
+        "questions": 291,
+        "both_correct": 274,
+        "view_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 19,
+          "correct_to_correct": 563
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 17,
+          "correct_to_correct": 274
+        }
+      },
+      "never_replayed": {
+        "views": 1744,
+        "view_correct": 1059,
+        "questions": 872,
+        "both_correct": 436,
+        "view_transitions": {
+          "wrong_to_wrong": 594,
+          "wrong_to_correct": 130,
+          "correct_to_wrong": 91,
+          "correct_to_correct": 929
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 385,
+          "wrong_to_correct": 67,
+          "correct_to_wrong": 51,
+          "correct_to_correct": 369
+        }
+      }
+    },
+    "semantic_margin": {
+      "retained": {
+        "views": 582,
+        "view_correct": 572,
+        "questions": 291,
+        "both_correct": 283,
+        "view_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 10,
+          "correct_to_correct": 572
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 0,
+          "wrong_to_correct": 0,
+          "correct_to_wrong": 8,
+          "correct_to_correct": 283
+        }
+      },
+      "never_replayed": {
+        "views": 1744,
+        "view_correct": 1105,
+        "questions": 872,
+        "both_correct": 484,
+        "view_transitions": {
+          "wrong_to_wrong": 537,
+          "wrong_to_correct": 187,
+          "correct_to_wrong": 102,
+          "correct_to_correct": 918
+        },
+        "both_transitions": {
+          "wrong_to_wrong": 349,
+          "wrong_to_correct": 103,
+          "correct_to_wrong": 39,
+          "correct_to_correct": 381
+        }
+      }
+    }
+  }
+}

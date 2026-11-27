@@ -1,0 +1,17 @@
+{
+  "scope": "Exploratory no-training comparison of the fixed MedBook replay views and a larger probe on previously seen but never replayed training items. Evaluate original and rotated option orders, matching the completed semantic training study.",
+  "seed": 100,
+  "worker_count": 4,
+  "reference_run": "revision_20261126/trial",
+  "common_nonmemory_n": 872,
+  "checkpoints": [
+    {"name": "shared_start", "path": "gpu56_development_20261108/stage1/model"},
+    {"name": "plain_gspo", "path": "matched_protection_20261108/stage1/model"},
+    {"name": "original_pact", "path": "gpu56_development_20261108/stage2/model"},
+    {"name": "semantic_margin", "path": "revision_20261126/trial/s1/model"}
+  ],
+  "retained": "291 questions times two fixed order views. Reproduce the calibrated starting decisions and use the same scored denominator for all checkpoints.",
+  "never_replayed": "All 872 prepared MedBook training questions outside the historical 338-item pool, including no historical-eligible item. Paired against the shared starting checkpoint for all comparisons. These questions were used in initial training and are not a validation or test split.",
+  "privacy": "Only release aggregate counts. Private bits are saved without original questions or answers.",
+  "max_wall_seconds": 7200
+}
