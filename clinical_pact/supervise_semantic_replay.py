@@ -77,7 +77,8 @@ def main():
         write_json(out / 'history.json', history)
         return result['reason'] == 'completed'
 
-    if phase([{'MODULE': train_module, 'PHASE': 'calibrate', 'CUDA_VISIBLE_DEVICES': physical[0]}]):
+    calibrate = protocol['arms'] != ['no_memory']
+    if not calibrate or phase([{'MODULE': train_module, 'PHASE': 'calibrate', 'CUDA_VISIBLE_DEVICES': physical[0]}]):
         for index, arm in enumerate(protocol['arms'], 1):
             if time.time() >= deadline:
                 break
@@ -98,6 +99,8 @@ def main():
             destination = out / stage / 'validation'
             (destination / 'private').mkdir(parents=True)
             settings = dict(MODULE=eval_module, EVAL_DIR=str(destination))
+            if not calibrate:
+                settings['AUDIT_OUT'] = str(root / protocol['evaluation_memory_reference'])
             evaluation = {'checkpoints': [{'name': stage, 'path': str((out / stage / 'model').relative_to(root))}] * 2,
                           'tasks': [{'name': 'MedicalVQA_MedBook', 'n': 130},
                                     {'name': 'MedicalVQA_Pathology', 'n': 6259}],
@@ -105,7 +108,7 @@ def main():
             write_json(destination / 'protocol.json', evaluation)
             if not phase([dict(settings, RANK=str(rank)) for rank in range(2)]) or not phase([settings]):
                 break
-    expected = 1 + 3 * len(protocol['arms'])
+    expected = int(calibrate) + 3 * len(protocol['arms'])
     reason = 'completed' if len(history) == expected and history[-1]['reason'] == 'completed' else history[-1]['reason']
     if len(history) != expected and reason == 'completed':
         reason = 'time_limit'

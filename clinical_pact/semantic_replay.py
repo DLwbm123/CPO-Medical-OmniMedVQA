@@ -83,6 +83,8 @@ class SemanticTrainer(FixedPromptControlTrainer):
         raise ValueError('unknown replay arm')
 
     def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        if self.arm == 'no_memory':
+            return super().compute_loss(model, inputs, return_outputs, num_items_in_batch)
         step = self.state.global_step
         rank = self.accelerator.process_index
         if self.replay_cache is None or self.replay_cache[0] != step:
@@ -123,9 +125,11 @@ def train(root, out, reference, protocol, arm):
     torch.cuda.set_device(int(os.environ['LOCAL_RANK']))
     dist.init_process_group('nccl')
     set_seed(protocol['seed'])
-    cache = json.loads((out / 'private' / 'reference.json').read_text())
-    known = known_views(reference)
-    views = [(*known[int(index)], logits) for index, logits in cache.items()]
+    views = []
+    if arm != 'no_memory':
+        cache = json.loads((out / 'private' / 'reference.json').read_text())
+        known = known_views(reference)
+        views = [(*known[int(index)], logits) for index, logits in cache.items()]
     processor = AutoProcessor.from_pretrained(root / 'models/base', local_files_only=True,
                                              min_pixels=128*28*28, max_pixels=512*28*28)
     processor.tokenizer.padding_side = 'left'

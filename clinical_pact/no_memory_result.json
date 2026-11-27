@@ -1,0 +1,131 @@
+{
+  "status": {
+    "reason": "completed",
+    "phases": [
+      {
+        "phase": 0,
+        "reason": "completed",
+        "codes": [
+          0,
+          0
+        ],
+        "seconds": 5917.336639852263
+      },
+      {
+        "phase": 1,
+        "reason": "completed",
+        "codes": [
+          0,
+          0
+        ],
+        "seconds": 713.3542945557274
+      },
+      {
+        "phase": 2,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.009055742993951
+      }
+    ]
+  },
+  "finished_beijing": "2026-11-27T10:44:03+08:00",
+  "updates": 200,
+  "allocated_bytes": 7527915520,
+  "model_shards": 2,
+  "aggregate": {
+    "subsets": {
+      "medbook": {
+        "correct": 78,
+        "generated_tokens": 265,
+        "eos_terminated": 130,
+        "valid_answer_type": 127,
+        "forced_correct": 83,
+        "rotated_correct": 78,
+        "both_views_correct": 66,
+        "n": 130
+      },
+      "pathvqa_other": {
+        "correct": 158,
+        "generated_tokens": 9494,
+        "eos_terminated": 3134,
+        "n": 3134
+      },
+      "pathvqa_yes_no": {
+        "correct": 1863,
+        "generated_tokens": 6255,
+        "eos_terminated": 3125,
+        "valid_answer_type": 3115,
+        "n": 3125
+      }
+    },
+    "memory_audit": {
+      "n": 582,
+      "flips": 37
+    }
+  },
+  "training_metric_agreement_out_of_200": {
+    "grad_norm": 200,
+    "reward": 200,
+    "frac_reward_zero_std": 200,
+    "learning_rate": 200
+  },
+  "repeated_example_metric_agreement": {
+    "medbook": 130,
+    "pathvqa_yes_no": 3125,
+    "pathvqa_other": 3134
+  },
+  "historical_validation_aggregate_identical": true,
+  "paired_from_shared_start": {
+    "medbook:correct": {
+      "00": 43,
+      "01": 5,
+      "10": 9,
+      "11": 73
+    },
+    "medbook:forced_correct": {
+      "00": 41,
+      "01": 5,
+      "10": 6,
+      "11": 78
+    },
+    "medbook:rotated_correct": {
+      "00": 45,
+      "01": 8,
+      "10": 7,
+      "11": 70
+    },
+    "medbook:both_views_correct": {
+      "00": 57,
+      "01": 9,
+      "10": 7,
+      "11": 57
+    },
+    "pathvqa_yes_no:correct": {
+      "00": 810,
+      "01": 1321,
+      "10": 452,
+      "11": 542
+    },
+    "pathvqa_other:correct": {
+      "00": 2974,
+      "01": 151,
+      "10": 2,
+      "11": 7
+    }
+  },
+  "yes_no_confusion": {
+    "yes": {
+      "yes": 1710,
+      "no": 1,
+      "other": 1
+    },
+    "no": {
+      "yes": 1251,
+      "no": 153,
+      "other": 9
+    }
+  },
+  "clipping_pre_norm_gt_1": 58
+}

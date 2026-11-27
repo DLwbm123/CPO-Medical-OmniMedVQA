@@ -1,0 +1,13 @@
+{
+  "scope": "Single-seed repeat of the no-memory control using the exact new training entry and the retained shared initialization. The memory is available only to the post-training evaluator.",
+  "arms": ["no_memory"],
+  "seed": 100,
+  "updates": 200,
+  "flip_budget": 0.02,
+  "ema_decay": 0.5,
+  "dual_rate": 0.5,
+  "dual_cap": 1.0,
+  "evaluation_memory_reference": "revision_20261126/trial",
+  "max_wall_seconds": 28800,
+  "output_guard_bytes": 16000000000
+}

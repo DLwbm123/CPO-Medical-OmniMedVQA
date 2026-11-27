@@ -24,7 +24,7 @@ def evaluate(destination, protocol, rank):
     if protocol.get('sharded_checkpoint'):
         from .semantic_replay import known_views
 
-        run = Path(os.environ['OUT'])
+        run = Path(os.environ.get('AUDIT_OUT', os.environ['OUT']))
         known = known_views(Path(os.environ['REFERENCE']))
         reference = json.loads((run / 'private' / 'reference.json').read_text())
         audit = Counter(n=0, flips=0)
@@ -111,7 +111,8 @@ def aggregate_shards(destination, protocol):
             raise ValueError('missing or duplicate validation rows')
         metrics[key].sort(key=lambda record: record['row_index'])
     write_json(destination / 'private' / 'merged.json', metrics)
-    expected = json.loads((Path(os.environ['OUT']) / 'calibration.json').read_text())['eligible_questions'] * 2
+    audit_run = Path(os.environ.get('AUDIT_OUT', os.environ['OUT']))
+    expected = json.loads((audit_run / 'calibration.json').read_text())['eligible_questions'] * 2
     if memory['n'] != expected:
         raise ValueError('incomplete final memory audit')
     write_json(destination / 'aggregate.json', {'subsets': reports, 'memory_audit': dict(memory)})
