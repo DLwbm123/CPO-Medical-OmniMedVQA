@@ -1,0 +1,3 @@
+tt_reason_user: |
+  Use the provided medical image and question. Think briefly about the options,
+  then write the letter of your final choice inside \boxed{}.

@@ -1,0 +1,311 @@
+{
+  "seed": 100,
+  "updates_per_new_task": 200,
+  "physical_gpu_count": 1,
+  "finished_at": "2026-11-28T14:27:19+08:00",
+  "status": {
+    "reason": "completed",
+    "phases": [
+      {
+        "phase": 0,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 12.021139033138752
+      },
+      {
+        "phase": 1,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 6135.020244995132
+      },
+      {
+        "phase": 2,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 3522.1797335371375
+      },
+      {
+        "phase": 3,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.009666875004768
+      },
+      {
+        "phase": 4,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 5271.2344761407
+      },
+      {
+        "phase": 5,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 3826.1656352952123
+      },
+      {
+        "phase": 6,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.011102745309472
+      }
+    ]
+  },
+  "gspo": {
+    "validation_matrix": {
+      "s1": {
+        "medbook": 0.6307692307692307
+      },
+      "s2": {
+        "medbook": 0.33076923076923076,
+        "pathvqa": 0.2968525323534111
+      },
+      "s3": {
+        "medbook": 0.5384615384615384,
+        "pathvqa": 0.31410768493369545,
+        "slake": 0.5004748338081672
+      }
+    },
+    "stages": [
+      {
+        "tasks": {
+          "medbook": {
+            "n": 130,
+            "correct": 82,
+            "generated_tokens": 260,
+            "eos_terminated": 130,
+            "all_four_orders_correct": 55,
+            "four_order_validation_n": 130,
+            "accuracy": 0.6307692307692307,
+            "all_four_orders_accuracy": 0.4230769230769231
+          }
+        },
+        "probes": {
+          "medbook": {
+            "candidate": {
+              "views": 1352,
+              "correct": 1217
+            },
+            "unreplayed": {
+              "views": 3488,
+              "correct": 2087
+            }
+          }
+        }
+      },
+      {
+        "tasks": {
+          "medbook": {
+            "n": 130,
+            "correct": 43,
+            "generated_tokens": 260,
+            "eos_terminated": 130,
+            "all_four_orders_correct": 58,
+            "four_order_validation_n": 130,
+            "accuracy": 0.33076923076923076,
+            "all_four_orders_accuracy": 0.4461538461538462
+          },
+          "pathvqa": {
+            "n": 6259,
+            "correct": 1858,
+            "generated_tokens": 13286,
+            "eos_terminated": 6259,
+            "other_n": 3134,
+            "other_correct": 146,
+            "gold_yes_pred_yes": 1712,
+            "gold_no_pred_yes": 1406,
+            "gold_no_pred_other": 7,
+            "accuracy": 0.2968525323534111,
+            "yes_no_accuracy": 0.54784,
+            "yes_no_balanced_accuracy": 0.5,
+            "predicted_yes_fraction": 0.99776
+          }
+        },
+        "probes": {
+          "medbook": {
+            "candidate": {
+              "views": 1352,
+              "correct": 1180
+            },
+            "unreplayed": {
+              "views": 3488,
+              "correct": 2102
+            }
+          },
+          "pathvqa": {
+            "candidate": {
+              "views": 338,
+              "correct": 169
+            },
+            "unreplayed": {
+              "views": 9410,
+              "correct": 5208
+            }
+          }
+        }
+      },
+      {
+        "tasks": {
+          "medbook": {
+            "n": 130,
+            "correct": 70,
+            "generated_tokens": 266,
+            "eos_terminated": 130,
+            "all_four_orders_correct": 55,
+            "four_order_validation_n": 130,
+            "accuracy": 0.5384615384615384,
+            "all_four_orders_accuracy": 0.4230769230769231
+          },
+          "pathvqa": {
+            "n": 6259,
+            "correct": 1966,
+            "generated_tokens": 14803,
+            "eos_terminated": 6259,
+            "other_n": 3134,
+            "other_correct": 143,
+            "gold_yes_pred_yes": 1634,
+            "gold_no_pred_yes": 1217,
+            "gold_yes_pred_no": 78,
+            "gold_no_pred_no": 189,
+            "gold_no_pred_other": 7,
+            "accuracy": 0.31410768493369545,
+            "yes_no_accuracy": 0.58336,
+            "yes_no_balanced_accuracy": 0.5440986070599441,
+            "predicted_yes_fraction": 0.91232
+          },
+          "slake": {
+            "n": 1053,
+            "correct": 527,
+            "generated_tokens": 2930,
+            "eos_terminated": 1052,
+            "accuracy": 0.5004748338081672
+          }
+        },
+        "probes": {
+          "medbook": {
+            "candidate": {
+              "views": 1352,
+              "correct": 1082
+            },
+            "unreplayed": {
+              "views": 3488,
+              "correct": 1964
+            }
+          },
+          "pathvqa": {
+            "candidate": {
+              "views": 338,
+              "correct": 178
+            },
+            "unreplayed": {
+              "views": 9410,
+              "correct": 5605
+            }
+          }
+        }
+      }
+    ],
+    "old_task_changes": {
+      "medbook": {
+        "memory": {
+          "n": 996,
+          "flips": 103
+        },
+        "unreplayed_view_transitions": {
+          "wrong_to_wrong": 1135,
+          "wrong_to_correct": 266,
+          "correct_to_wrong": 389,
+          "correct_to_correct": 1698
+        },
+        "unreplayed_all_orders_transitions": {
+          "wrong_to_wrong": 436,
+          "wrong_to_correct": 65,
+          "correct_to_wrong": 86,
+          "correct_to_correct": 285
+        }
+      },
+      "pathvqa": {
+        "memory": {
+          "n": 169,
+          "flips": 8
+        },
+        "unreplayed_view_transitions": {
+          "wrong_to_wrong": 3492,
+          "wrong_to_correct": 710,
+          "correct_to_wrong": 313,
+          "correct_to_correct": 4895
+        }
+      }
+    },
+    "final_average_accuracy": 0.451014685734467,
+    "generation_final_minus_peak": {
+      "medbook": -0.09230769230769231,
+      "pathvqa": 0.0
+    },
+    "backward_transfer": -0.03752626986370397,
+    "plasticity": {
+      "medbook": 0.6307692307692307,
+      "pathvqa": 0.2968525323534111,
+      "slake": 0.5004748338081672
+    },
+    "semantic_validation_matrix": {
+      "s1": {
+        "medbook": 0.4230769230769231
+      },
+      "s2": {
+        "medbook": 0.4461538461538462,
+        "pathvqa": 0.54784
+      },
+      "s3": {
+        "medbook": 0.4230769230769231,
+        "pathvqa": 0.58336
+      }
+    },
+    "final_minus_peak": {
+      "medbook": -0.023076923076923106,
+      "pathvqa": 0.0
+    },
+    "macro_final_minus_peak": -0.011538461538461553,
+    "unreplayed_flip_rates": {
+      "medbook": 0.23180592991913745,
+      "pathvqa": 0.06009984639016897
+    },
+    "macro_unreplayed_flip_rate": 0.1459528881546532,
+    "measurable_forgetting_gate": true
+  },
+  "paired_common_initial_correct": {
+    "medbook": {
+      "probe_n": 872,
+      "v3_initial_correct": 371,
+      "gspo_initial_correct": 371,
+      "common_initial_correct": 371,
+      "both_retained": 262,
+      "v3_only_retained": 53,
+      "gspo_only_retained": 23,
+      "both_flipped": 33
+    },
+    "pathvqa": {
+      "probe_n": 9410,
+      "v3_initial_correct": 5207,
+      "gspo_initial_correct": 5208,
+      "common_initial_correct": 5206,
+      "both_retained": 4893,
+      "v3_only_retained": 313,
+      "gspo_only_retained": 0,
+      "both_flipped": 0
+    }
+  }
+}

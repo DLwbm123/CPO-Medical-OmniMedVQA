@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "stage": "A",
+  "checkpoint": "unadapted Qwen2.5-VL-3B-Instruct",
+  "split": "validation",
+  "seed": 100,
+  "validation_counts": {
+    "CT": 1577,
+    "MRI": 3190,
+    "XRay": 769,
+    "Ultrasound": 1103,
+    "Fundus": 544,
+    "OCT": 456,
+    "Dermoscopy": 674,
+    "Microscopy": 571
+  },
+  "a1_limit": 1000,
+  "a2_n": 300,
+  "greedy_check_n": 50,
+  "sampling": {
+    "do_sample": true,
+    "num_beams": 1,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 0,
+    "min_p": null,
+    "typical_p": 1.0,
+    "repetition_penalty": 1.0,
+    "max_new_tokens": 128,
+    "use_cache": true
+  },
+  "votes": 16,
+  "agreement_band_votes": [10, 14],
+  "max_paired_z": 2.576,
+  "multi_token_threshold": 0.25,
+  "gate": {
+    "min_gain": 0.02,
+    "min_coverage": 0.30,
+    "min_pseudo_accuracy": 0.70,
+    "min_modalities": 4
+  },
+  "max_wall_seconds": 82800,
+  "projected_wall_limit_seconds": 72000,
+  "output_guard_bytes": 2000000000
+}
