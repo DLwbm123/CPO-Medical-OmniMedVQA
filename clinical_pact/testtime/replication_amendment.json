@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "amends_commit": "f69bdca",
+  "running_run": "run24",
+  "preserve_running_source": true,
+  "fundus_stage_b": "failed",
+  "old_replication_direction_authoritative": false,
+  "replication_role": "baseline_and_mechanism_diagnostic",
+  "keep_arms": ["tt_v0"],
+  "cancel_unstarted_arms": ["image_gate"],
+  "report_original_replication_checks": true,
+  "decision_sequence": ["precheck_protocol.json", "dev_pilot_protocol.json", "confirm_pilot_protocol.json"],
+  "no_method_or_hyperparameter_change_after_replication": true,
+  "modified_method_confirm_task": "XRay",
+  "modified_method_holdout_questions": 600,
+  "modified_method_split_unit": "resolved_image_path",
+  "black_gate_report_stratification": "legal_option_count",
+  "defer_gpu_work_until_replication_releases_resources": true
+}
