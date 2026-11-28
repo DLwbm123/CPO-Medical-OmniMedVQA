@@ -71,10 +71,13 @@ class PilotTrainer(GRPOTrainer):
             raise ValueError('pilot requires the frozen GPU count and a complete step per generation batch')
 
     def _choice_probabilities(self, model, item, *, black=False):
+        return self._choice_log_probs(model,item,black=black).exp()
+
+    def _choice_log_probs(self, model, item, *, black=False, replacement=None):
         processor = self.processing_class
         dataset = self.train_dataset
         prefix = r'\boxed{'
-        image = read_image(item)
+        image = read_image(item if replacement is None else replacement)
         if black:
             image = Image.new('RGB',image.size)
         messages = describe(item,dataset.user,dataset.system)
@@ -86,7 +89,7 @@ class PilotTrainer(GRPOTrainer):
         if tensors['input_ids'][0,-len(ids):].tolist() != ids:
             raise ValueError('forced-choice prefix tokenization differs at the prompt boundary')
         logits = model(**tensors,logits_to_keep=1,use_cache=False).logits[0,-1,choices].float()
-        return logits.softmax(0)
+        return logits.log_softmax(0)
 
     @torch.no_grad()
     def _guard_reference(self):

@@ -121,19 +121,21 @@ def reasoning_prompt():
     return system, prompt
 
 
-def input_for(processor, item, mode, *, assistant_prefix='', black_image=False):
+def input_for(processor, item, mode, *, assistant_prefix='', black_image=False, replacement_image=None):
     from ..multimodal import make_inputs
 
     if mode == 'canonical':
-        if black_image:
-            raise ValueError('black-image diagnostic requires the reasoning prompt')
+        if black_image or replacement_image is not None:
+            raise ValueError('replacement-image diagnostic requires the reasoning prompt')
         return make_inputs(processor, {'image': item.image, 'question': item.question},
                            device=0,assistant_prefix=assistant_prefix)
     from PIL import Image
 
     system, prompt = reasoning_prompt()
     question = re.sub(r'<image(?:[_ ]?\d+)?>', '', item.question).strip()
-    with Image.open(item.image) as source:
+    if black_image and replacement_image is not None:
+        raise ValueError('black and replacement images are mutually exclusive')
+    with Image.open(item.image if replacement_image is None else replacement_image) as source:
         image = Image.new('RGB',source.size) if black_image else source.convert('RGB')
     content = [{'type': 'image', 'image': image}, {'type': 'text', 'text': prompt + '\n' + question}]
     messages = [{'role':'system','content':system}, {'role':'user','content':content}]
