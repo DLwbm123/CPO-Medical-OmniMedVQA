@@ -387,5 +387,111 @@
       }
     ],
     "scope": "New four-order validation scores on frozen checkpoints; binary validation and unreplayed probe decisions reused. A same-GPU baseline is in progress."
+  },
+  "matched_stage2": {
+    "scope": "Stage-two comparison for single-GPU seed 100, from the shared MedBook checkpoint. Final GSPO SLAKE scores are pending.",
+    "gspo_stage2_evaluated_at": "2026-11-28T11:55:32+08:00",
+    "gspo_stage2_receipts": [
+      {
+        "phase": 0,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 12.021139033138752
+      },
+      {
+        "phase": 1,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 6135.020244995132
+      },
+      {
+        "phase": 2,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 3522.1797335371375
+      },
+      {
+        "phase": 3,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.009666875004768
+      }
+    ],
+    "gspo_stage2_validation": {
+      "medbook": {
+        "n": 130,
+        "correct": 43,
+        "generated_tokens": 260,
+        "eos_terminated": 130,
+        "all_four_orders_correct": 58,
+        "four_order_validation_n": 130,
+        "accuracy": 0.33076923076923076,
+        "all_four_orders_accuracy": 0.4461538461538462
+      },
+      "pathvqa": {
+        "n": 6259,
+        "correct": 1858,
+        "generated_tokens": 13286,
+        "eos_terminated": 6259,
+        "other_n": 3134,
+        "other_correct": 146,
+        "gold_yes_pred_yes": 1712,
+        "gold_no_pred_yes": 1406,
+        "gold_no_pred_other": 7,
+        "accuracy": 0.2968525323534111,
+        "yes_no_accuracy": 0.54784,
+        "yes_no_balanced_accuracy": 0.5,
+        "predicted_yes_fraction": 0.99776
+      }
+    },
+    "v3_stage2_validation": {
+      "medbook": {
+        "n": 130,
+        "correct": 86,
+        "generated_tokens": 260,
+        "eos_terminated": 130,
+        "all_four_orders_correct": 62,
+        "four_order_validation_n": 130,
+        "accuracy": 0.6615384615384615,
+        "all_four_orders_accuracy": 0.47692307692307695
+      },
+      "pathvqa": {
+        "n": 6259,
+        "correct": 1858,
+        "generated_tokens": 13927,
+        "eos_terminated": 6259,
+        "other_n": 3134,
+        "other_correct": 146,
+        "gold_yes_pred_yes": 1712,
+        "gold_no_pred_yes": 1406,
+        "gold_no_pred_other": 7,
+        "accuracy": 0.2968525323534111,
+        "yes_no_balanced_accuracy": 0.5,
+        "predicted_yes_fraction": 0.99776,
+        "yes_no_accuracy": 0.54784
+      }
+    },
+    "medbook_unreplayed_four_order": {
+      "questions": 872,
+      "initial_correct": 371,
+      "v3_correct_to_wrong": 30,
+      "gspo_correct_to_wrong": 52,
+      "both_retained": 308,
+      "both_lost": 19,
+      "v3_only_retained": 33,
+      "gspo_only_retained": 11
+    },
+    "pathvqa_unreplayed_forced_correct": {
+      "v3": 5207,
+      "gspo": 5208
+    }
   }
 }
