@@ -152,7 +152,8 @@ def sample_answers(model, tokenizer, inputs, letters, gold, cfg, seed):
         setattr(generation, key, value)
     start = inputs['input_ids'].shape[1]
     tokens = model.generate(**inputs, generation_config=generation,
-                            num_return_sequences=VOTES, synced_gpus=False)[:, start:].tolist()
+                            use_model_defaults=False, num_return_sequences=VOTES,
+                            synced_gpus=False)[:, start:].tolist()
     answers = [extract_letter(text, letters) for text in tokenizer.batch_decode(tokens, skip_special_tokens=True)]
     votes = [letters.index(letter) if letter is not None else len(letters) for letter in answers]
     row = sampled_votes(votes, len(letters), letters.index(gold), cfg['agreement_band_votes'])

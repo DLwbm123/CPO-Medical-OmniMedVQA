@@ -1,10 +1,34 @@
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 from .guard import Guard, total_variation
-from .votes import training_indices, vote_decision
+from .votes import gather_votes, training_indices, vote_decision
+
+
+def verify_rank_votes(rank, store):
+    import torch.distributed as dist
+
+    dist.init_process_group('gloo',init_method=store,rank=rank,world_size=2)
+    try:
+        local = ['A']*8 if rank == 0 else ['A']*2+['B']*2+[None]*4
+        global_votes = gather_votes(local)
+        guess = vote_decision(global_votes,'AB')
+        chosen = training_indices(100,2,'joint-question')
+        assert global_votes == ('A',)*10+('B',)*2+(None,)*4
+        assert guess.pseudo_label == 'A' and guess.peak == 10 and guess.in_band
+        assert len(set(chosen)) == 8 and len(guess.rewards([global_votes[i] for i in chosen])) == 8
+    finally:
+        dist.destroy_process_group()
 
 
 class PilotRewardTest(unittest.TestCase):
+    def test_two_rank_gather(self):
+        from torch.multiprocessing import spawn
+
+        with TemporaryDirectory() as temp:
+            spawn(verify_rank_votes,args=((Path(temp)/'store').as_uri(),),nprocs=2)
+
     def test_majority_gate_rewards_and_subset(self):
         answers = ['A']*10 + ['B']*4 + [None]*2
         result = vote_decision(answers,'AB')

@@ -1,0 +1,157 @@
+{
+  "training_finished_at": "2026-11-28T16:58:16+08:00",
+  "evaluation_finished_at": "2026-11-28T17:26:36+08:00",
+  "training": {
+    "steps": 200,
+    "applied": 166,
+    "brake_stop": false,
+    "training_labels": 0,
+    "smoke": false,
+    "reference_matches": true,
+    "trainable_scope": "full",
+    "gpu_count": 2
+  },
+  "cost_and_behavior": {
+    "training_seconds": 5146.035841459408,
+    "per_rank_peak_reserved_bytes": [
+      42435870720,
+      42435870720
+    ],
+    "training_questions": 800,
+    "brake_steps": 34,
+    "steps_with_nonzero_policy_advantages": 50,
+    "generated_rollouts": 12800
+  },
+  "validation": {
+    "task": "Fundus",
+    "prompt": "reason",
+    "split": "validation",
+    "modalities": {
+      "CT": {
+        "n": 300,
+        "greedy": 0.64,
+        "greedy_correct": 192,
+        "greedy_invalid": 0
+      },
+      "MRI": {
+        "n": 300,
+        "greedy": 0.7566666666666667,
+        "greedy_correct": 227,
+        "greedy_invalid": 0
+      },
+      "XRay": {
+        "n": 300,
+        "greedy": 0.8033333333333333,
+        "greedy_correct": 241,
+        "greedy_invalid": 0
+      },
+      "Ultrasound": {
+        "n": 300,
+        "greedy": 0.42333333333333334,
+        "greedy_correct": 127,
+        "greedy_invalid": 0
+      },
+      "Fundus": {
+        "pass1": 0.8327205882352942,
+        "maj8": 0.8272058823529411,
+        "maj16": 0.8327205882352942,
+        "pass8": 0.8586194238767769,
+        "pass16": 0.8639705882352942,
+        "n": 544,
+        "agreement": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.001838235294117647,
+          0.011029411764705883,
+          0.0055147058823529415,
+          0.007352941176470588,
+          0.001838235294117647,
+          0.007352941176470588,
+          0.012867647058823529,
+          0.04411764705882353,
+          0.9080882352941176
+        ],
+        "band_coverage": 0.034926470588235295,
+        "pseudo_accuracy": 0.3684210526315789,
+        "gain": 0.0,
+        "predicted_marginal": {
+          "A": 0.2725183823529412,
+          "B": 0.2912454044117647,
+          "C": 0.2250689338235294,
+          "D": 0.2109375,
+          "invalid": 0.00022977941176470588
+        },
+        "gold_marginal": {
+          "A": 0.2647058823529412,
+          "B": 0.2665441176470588,
+          "C": 0.22794117647058823,
+          "D": 0.24080882352941177
+        },
+        "multi_token_fraction": 0.00011488970588235294,
+        "greedy": 0.8308823529411765,
+        "greedy_correct": 452,
+        "greedy_invalid": 0
+      },
+      "OCT": {
+        "n": 300,
+        "greedy": 0.6733333333333333,
+        "greedy_correct": 202,
+        "greedy_invalid": 0
+      },
+      "Dermoscopy": {
+        "n": 300,
+        "greedy": 0.7666666666666667,
+        "greedy_correct": 230,
+        "greedy_invalid": 0
+      },
+      "Microscopy": {
+        "n": 300,
+        "greedy": 0.5933333333333334,
+        "greedy_correct": 178,
+        "greedy_invalid": 0
+      }
+    },
+    "other_modalities_mean_greedy": 0.6652380952380953,
+    "elapsed_seconds": 1129.46498999279,
+    "peak_allocated_gpu_bytes": 9386781184
+  },
+  "evaluation_recovery": {
+    "used_same_checkpoint": true,
+    "original_clock_preserved": true,
+    "previous_phase_reason": "cancelled_after_checkpoint_defaults_overrode_decode",
+    "final_status": {
+      "phase": 0,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 1138.1994902770966
+    }
+  },
+  "gate": {
+    "passed": false,
+    "checks": {
+      "greedy_vs_greedy": true,
+      "greedy_vs_maj16": true,
+      "prediction_tv": true,
+      "pass16": false,
+      "other_greedy": true,
+      "brake": true
+    },
+    "gains": {
+      "greedy_vs_greedy": 0.37500000000000006,
+      "greedy_vs_maj16": 0.13235294117647067,
+      "maj16": 0.1341911764705883,
+      "pass16": -0.08639705882352933,
+      "other_greedy": 0.17380952380952386
+    },
+    "prediction_tv": 0.02263131989663275,
+    "supplemental_maj16": true
+  }
+}

@@ -25,7 +25,7 @@ def evaluation_cohorts(root, spec):
 
 
 def greedy_letter(model, tokenizer, inputs, letters, generation):
-    tokens = model.generate(**inputs, generation_config=generation, synced_gpus=False)
+    tokens = model.generate(**inputs, generation_config=generation, use_model_defaults=False, synced_gpus=False)
     response = tokens[0, inputs['input_ids'].shape[1]:]
     return extract_letter(tokenizer.decode(response, skip_special_tokens=True), letters)
 
@@ -85,10 +85,18 @@ def main():
     if spec['stage'] != 'B' or spec['split'] != 'validation' or ',' in os.environ['CUDA_VISIBLE_DEVICES']:
         raise ValueError('stage B pilot evaluator requires validation and one GPU')
     if os.environ.get('TT_EVAL_WORKER') == '1':
-        evaluate(out,spec)
+        evaluate(Path(os.environ.get('TT_EVAL_OUT',out)),spec)
         return
-    started = time.time()
-    deadline = started + min(spec['max_wall_seconds'], 23*3600)
+    previous_clock = out/'original_eval_clock.json'
+    if previous_clock.exists():
+        original = json.loads(previous_clock.read_text())
+        started = original['started']
+        deadline = min(original['deadline'], started + min(spec['max_wall_seconds'], 23*3600))
+    else:
+        started = time.time()
+        deadline = started + min(spec['max_wall_seconds'], 23*3600)
+    if time.time() >= deadline:
+        raise ValueError('original pilot evaluation deadline has expired')
     with (out/'clock.json').open('x') as stream:
         json.dump({'started':started, 'deadline':deadline},stream)
     result = run_workers(out,spec,0,[{'MODULE': 'clinical_pact.testtime.pilot_eval','TT_EVAL_WORKER': '1'}],deadline)
