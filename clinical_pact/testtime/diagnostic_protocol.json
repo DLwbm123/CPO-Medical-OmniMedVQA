@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "parent_pilot": "pilot_protocol.json",
+  "split": "validation",
+  "task": "Fundus",
+  "assistant_prefix": "\\boxed{",
+  "real_arms": ["frozen", "tt_v0", "ttrl"],
+  "black_arms": ["frozen", "tt_v0"],
+  "expected_fundus_training_rows": 4325,
+  "prior_tie_break": "alphabetical",
+  "format_gain_cutoff": 0.02,
+  "decision_gain_cutoff": 0.05,
+  "bootstrap_seed": 100,
+  "bootstrap_samples": 10000,
+  "confidence_cutoff": 0.9,
+  "selective_coverages": [0.25, 0.5, 0.75, 1.0],
+  "max_wall_seconds": 7200,
+  "output_guard_bytes": 500000000
+}

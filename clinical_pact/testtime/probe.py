@@ -111,23 +111,33 @@ def evaluate_gate(summary, cfg):
             and summary['pseudo_accuracy'] >= cfg['min_pseudo_accuracy'])
 
 
-def input_for(processor, item, mode):
-    from ..multimodal import make_inputs
-
-    if mode == 'canonical':
-        return make_inputs(processor, {'image': item.image, 'question': item.question}, device=0)
-    from PIL import Image
+@lru_cache(maxsize=1)
+def reasoning_prompt():
     import yaml
 
     prompt_dir = Path(__file__).parent
     system = yaml.safe_load((prompt_dir.parent/'prompts.yaml').read_text())['system']
     prompt = yaml.safe_load((prompt_dir/'prompts.yaml').read_text())['tt_reason_user']
+    return system, prompt
+
+
+def input_for(processor, item, mode, *, assistant_prefix='', black_image=False):
+    from ..multimodal import make_inputs
+
+    if mode == 'canonical':
+        if black_image:
+            raise ValueError('black-image diagnostic requires the reasoning prompt')
+        return make_inputs(processor, {'image': item.image, 'question': item.question},
+                           device=0,assistant_prefix=assistant_prefix)
+    from PIL import Image
+
+    system, prompt = reasoning_prompt()
     question = re.sub(r'<image(?:[_ ]?\d+)?>', '', item.question).strip()
     with Image.open(item.image) as source:
-        image = source.convert('RGB')
+        image = Image.new('RGB',source.size) if black_image else source.convert('RGB')
     content = [{'type': 'image', 'image': image}, {'type': 'text', 'text': prompt + '\n' + question}]
     messages = [{'role':'system','content':system}, {'role':'user','content':content}]
-    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True) + assistant_prefix
     return processor(text=[text], images=[image], padding=False, return_tensors='pt').to(0)
 
 
