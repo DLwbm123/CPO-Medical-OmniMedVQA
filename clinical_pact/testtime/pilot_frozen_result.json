@@ -1,0 +1,108 @@
+{
+  "status": {
+    "phase": 0,
+    "reason": "completed",
+    "codes": [
+      0
+    ],
+    "seconds": 1614.057701963
+  },
+  "finished_at": "2026-11-28T15:07:46+08:00",
+  "task": "Fundus",
+  "prompt": "reason",
+  "split": "validation",
+  "modalities": {
+    "CT": {
+      "n": 300,
+      "greedy": 0.42,
+      "greedy_correct": 126,
+      "greedy_invalid": 60
+    },
+    "MRI": {
+      "n": 300,
+      "greedy": 0.43,
+      "greedy_correct": 129,
+      "greedy_invalid": 92
+    },
+    "XRay": {
+      "n": 300,
+      "greedy": 0.6,
+      "greedy_correct": 180,
+      "greedy_invalid": 54
+    },
+    "Ultrasound": {
+      "n": 300,
+      "greedy": 0.25333333333333335,
+      "greedy_correct": 76,
+      "greedy_invalid": 51
+    },
+    "Fundus": {
+      "pass1": 0.447265625,
+      "maj8": 0.6709558823529411,
+      "maj16": 0.6985294117647058,
+      "pass8": 0.8939738162164632,
+      "pass16": 0.9503676470588235,
+      "n": 544,
+      "agreement": [
+        0.001838235294117647,
+        0.022058823529411766,
+        0.03676470588235294,
+        0.03860294117647059,
+        0.05330882352941176,
+        0.07169117647058823,
+        0.11764705882352941,
+        0.06801470588235294,
+        0.08639705882352941,
+        0.11213235294117647,
+        0.08088235294117647,
+        0.09375,
+        0.07352941176470588,
+        0.05698529411764706,
+        0.04411764705882353,
+        0.034926470588235295,
+        0.007352941176470588
+      ],
+      "band_coverage": 0.349264705882353,
+      "pseudo_accuracy": 0.8473684210526314,
+      "gain": 0.25126378676470584,
+      "predicted_marginal": {
+        "A": 0.18497242647058823,
+        "B": 0.20255055147058823,
+        "C": 0.1499310661764706,
+        "D": 0.16383272058823528,
+        "invalid": 0.29871323529411764
+      },
+      "gold_marginal": {
+        "A": 0.2647058823529412,
+        "B": 0.2665441176470588,
+        "C": 0.22794117647058823,
+        "D": 0.24080882352941177
+      },
+      "multi_token_fraction": 0.4885110294117647,
+      "greedy": 0.45588235294117646,
+      "greedy_correct": 248,
+      "greedy_invalid": 193
+    },
+    "OCT": {
+      "n": 300,
+      "greedy": 0.74,
+      "greedy_correct": 222,
+      "greedy_invalid": 37
+    },
+    "Dermoscopy": {
+      "n": 300,
+      "greedy": 0.49666666666666665,
+      "greedy_correct": 149,
+      "greedy_invalid": 88
+    },
+    "Microscopy": {
+      "n": 300,
+      "greedy": 0.5,
+      "greedy_correct": 150,
+      "greedy_invalid": 71
+    }
+  },
+  "other_modalities_mean_greedy": 0.49142857142857144,
+  "elapsed_seconds": 1604.268062855117,
+  "peak_allocated_gpu_bytes": 9386781696
+}

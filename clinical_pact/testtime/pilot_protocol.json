@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "stage": "B",
+  "seed": 100,
+  "task": "Fundus",
+  "split": "validation",
+  "checkpoint": "unadapted Qwen2.5-VL-3B-Instruct",
+  "prompt": "reason",
+  "validation_counts": {
+    "CT": 1577,
+    "MRI": 3190,
+    "XRay": 769,
+    "Ultrasound": 1103,
+    "Fundus": 544,
+    "OCT": 456,
+    "Dermoscopy": 674,
+    "Microscopy": 571
+  },
+  "other_validation_n": 300,
+  "features": {
+    "updates": 200,
+    "prompts_per_update": 4,
+    "voting_rollouts": 16,
+    "training_rollouts": 8,
+    "agreement_band_votes": [10, 14],
+    "guard_reference_questions": 200,
+    "guard_window_questions": 50,
+    "guard_max_tv": 0.15,
+    "guard_max_consecutive_steps": 20
+  },
+  "agreement_band_votes": [10, 14],
+  "arms": {
+    "frozen": {"update": false, "training_labels": 0},
+    "ttrl": {"update": true, "training_labels": 0, "kl_beta": 0.0, "gate": false, "guard": false},
+    "tt_v0": {"update": true, "training_labels": 0, "kl_beta": 0.04, "gate": true, "guard": true}
+  },
+  "sampling": {
+    "do_sample": true,
+    "num_beams": 1,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "top_k": 0,
+    "min_p": null,
+    "typical_p": 1.0,
+    "repetition_penalty": 1.0,
+    "max_new_tokens": 128,
+    "use_cache": true
+  },
+  "gate_b": {
+    "min_greedy_gain_over_frozen_greedy": 0.02,
+    "min_greedy_gain_over_frozen_maj16": 0.0,
+    "supplemental_maj16_gain": 0.02,
+    "max_prediction_tv": 0.15,
+    "max_pass16_drop": 0.02,
+    "max_other_tasks_mean_accuracy_drop": 0.02
+  },
+  "max_wall_seconds": 82800,
+  "projected_wall_limit_seconds": 72000,
+  "output_guard_bytes": 2000000000
+}
