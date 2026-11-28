@@ -28,13 +28,11 @@ def wait_for_replication(out, replication):
 
 def free_cards(gpus, minimum, deadline):
     while time.time()<deadline:
-        command = ['nvidia-smi','-i',','.join(gpus)]
-        result = subprocess.check_output([*command,'--query-gpu=memory.free',
+        result = subprocess.check_output(['nvidia-smi','-i',','.join(gpus),
+                                          '--query-gpu=memory.free',
                                           '--format=csv,noheader,nounits'],text=True)
-        busy = subprocess.check_output([*command,'--query-compute-apps=pid',
-                                        '--format=csv,noheader,nounits'],text=True)
         free = [int(x) for x in result.splitlines()]
-        if not busy.strip() and len(free)==len(gpus) and min(free)>=minimum:
+        if len(free)==len(gpus) and min(free)>=minimum:
             return
         time.sleep(15)
     raise RuntimeError('the authorized GPUs did not have enough available memory')
