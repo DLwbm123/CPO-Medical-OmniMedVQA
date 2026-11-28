@@ -172,6 +172,13 @@ def aggregate(out, config):
             if [p[0] for p in ordered] != list(range(expected)):
                 raise ValueError('missing or duplicate decision-probe rows')
             groups[group] = [int(p[1]) for p in ordered]
+    if config.get('retained_probes'):
+        decisions = json.loads(Path(config['retained_probes']).read_text())
+        for task, groups in decisions.items():
+            for group, bits in groups.items():
+                expected = config['probe_sizes'][task][group] * (4 if task=='medbook' else 1)
+                if len(bits) != expected or any(bit not in (0, 1) for bit in bits):
+                    raise ValueError('retained probes differ from the frozen protocol')
     write_json(out/'private'/'decisions.json', decisions)
     probes = {k:{g:{'views':len(bits),'correct':sum(bits)} for g,bits in gg.items()} for k,gg in decisions.items()}
     report = {'tasks':stats,'probes':probes}
@@ -205,11 +212,11 @@ def frozen_retention_metrics(stages, changes):
             'measurable_forgetting_gate':macro_flip >= .10 or macro_delta <= -.03}
 
 
-def stages_summary(out, config):
+def stages_summary(out, config, *, retained_run=None):
     start = [out/f'e{i}' for i in (1,2,3)]
     stages = [json.loads((p/'aggregate.json').read_text()) for p in start]
     decisions = [json.loads((p/'private'/'decisions.json').read_text()) for p in start]
-    reference_file = out/'private'/'s3.json'
+    reference_file = (retained_run or out)/'private'/'s3.json'
     memory = json.loads(reference_file.read_text())['records'] if reference_file.is_file() else None
     changes = {}
     for task, initial in [('medbook',0), ('pathvqa',1)]:

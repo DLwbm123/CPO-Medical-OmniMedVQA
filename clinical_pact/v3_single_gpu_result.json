@@ -1,0 +1,309 @@
+{
+  "protocol": {
+    "seed": 100,
+    "updates": 200,
+    "single_gpu": true,
+    "projection": true,
+    "rotations": true,
+    "anchored": true,
+    "beta": 0.25,
+    "flip_budget": 0.02,
+    "dual_rate": 0.5,
+    "dual_cap": 1.0,
+    "audit_interval": 10,
+    "replay_views": 8,
+    "training_sizes": {
+      "pathvqa": 19648,
+      "slake": 4918
+    },
+    "validation_sizes": {
+      "medbook": 130,
+      "pathvqa": 6259,
+      "slake": 1053
+    },
+    "probe_sizes": {
+      "medbook": {
+        "candidate": 338,
+        "unreplayed": 872
+      },
+      "pathvqa": {
+        "candidate": 338,
+        "unreplayed": 9410
+      }
+    }
+  },
+  "training": {
+    "s2": {
+      "updates": 200,
+      "projection_steps": 29,
+      "positive_replay_weight_steps": 150
+    },
+    "s3": {
+      "updates": 200,
+      "projection_steps": 35,
+      "positive_replay_weight_steps": 0
+    }
+  },
+  "phases": [
+    {
+      "phase": 0,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 16.03404562920332
+    },
+    {
+      "phase": 1,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 16075.469849209767
+    },
+    {
+      "phase": 2,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 3230.2765984442085
+    },
+    {
+      "phase": 3,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 4.009357791393995
+    },
+    {
+      "phase": 4,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 15856.208643513732
+    },
+    {
+      "phase": 5,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 3407.430295950733
+    },
+    {
+      "phase": 6,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 4.010423022322357
+    },
+    {
+      "phase": 7,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 705.598876981996
+    },
+    {
+      "phase": 8,
+      "reason": "completed",
+      "codes": [
+        0
+      ],
+      "seconds": 4.010783328674734
+    }
+  ],
+  "completed_at": "2026-11-28T08:51:14+08:00",
+  "scope": "Single-GPU seed-100 exploratory validation. No extension and no same-hardware control yet. The frozen summary uses full free-generation accuracy for its original peak and transfer fields.",
+  "results": {
+    "validation_matrix": {
+      "s1": {
+        "medbook": 0.6307692307692307
+      },
+      "s2": {
+        "medbook": 0.6615384615384615,
+        "pathvqa": 0.2968525323534111
+      },
+      "s3": {
+        "medbook": 0.6153846153846154,
+        "pathvqa": 0.299249081322895,
+        "slake": 0.4795821462488129
+      }
+    },
+    "stages": [
+      {
+        "tasks": {
+          "medbook": {
+            "n": 130,
+            "correct": 82,
+            "generated_tokens": 260,
+            "eos_terminated": 130,
+            "accuracy": 0.6307692307692307
+          }
+        },
+        "probes": {
+          "medbook": {
+            "candidate": {
+              "views": 1352,
+              "correct": 1217
+            },
+            "unreplayed": {
+              "views": 3488,
+              "correct": 2087
+            }
+          }
+        }
+      },
+      {
+        "tasks": {
+          "medbook": {
+            "n": 130,
+            "correct": 86,
+            "generated_tokens": 260,
+            "eos_terminated": 130,
+            "accuracy": 0.6615384615384615
+          },
+          "pathvqa": {
+            "n": 6259,
+            "correct": 1858,
+            "generated_tokens": 13927,
+            "eos_terminated": 6259,
+            "other_n": 3134,
+            "other_correct": 146,
+            "gold_yes_pred_yes": 1712,
+            "gold_no_pred_yes": 1406,
+            "gold_no_pred_other": 7,
+            "accuracy": 0.2968525323534111,
+            "yes_no_balanced_accuracy": 0.5,
+            "predicted_yes_fraction": 0.99776
+          }
+        },
+        "probes": {
+          "medbook": {
+            "candidate": {
+              "views": 1352,
+              "correct": 1220
+            },
+            "unreplayed": {
+              "views": 3488,
+              "correct": 2194
+            }
+          },
+          "pathvqa": {
+            "candidate": {
+              "views": 338,
+              "correct": 169
+            },
+            "unreplayed": {
+              "views": 9410,
+              "correct": 5207
+            }
+          }
+        }
+      },
+      {
+        "tasks": {
+          "medbook": {
+            "n": 130,
+            "correct": 80,
+            "generated_tokens": 260,
+            "eos_terminated": 130,
+            "accuracy": 0.6153846153846154
+          },
+          "pathvqa": {
+            "n": 6259,
+            "correct": 1873,
+            "generated_tokens": 13876,
+            "eos_terminated": 6259,
+            "other_n": 3134,
+            "other_correct": 160,
+            "gold_yes_pred_yes": 1712,
+            "gold_no_pred_yes": 1405,
+            "gold_no_pred_no": 1,
+            "gold_no_pred_other": 7,
+            "accuracy": 0.299249081322895,
+            "yes_no_balanced_accuracy": 0.5003538570417552,
+            "predicted_yes_fraction": 0.99744
+          },
+          "slake": {
+            "n": 1053,
+            "correct": 505,
+            "generated_tokens": 2474,
+            "eos_terminated": 1053,
+            "accuracy": 0.4795821462488129
+          }
+        },
+        "probes": {
+          "medbook": {
+            "candidate": {
+              "views": 1352,
+              "correct": 1192
+            },
+            "unreplayed": {
+              "views": 3488,
+              "correct": 2050
+            }
+          },
+          "pathvqa": {
+            "candidate": {
+              "views": 338,
+              "correct": 169
+            },
+            "unreplayed": {
+              "views": 9410,
+              "correct": 5211
+            }
+          }
+        }
+      }
+    ],
+    "old_task_changes": {
+      "medbook": {
+        "memory": {
+          "n": 992,
+          "flips": 12
+        },
+        "unreplayed_view_transitions": {
+          "wrong_to_wrong": 1134,
+          "wrong_to_correct": 267,
+          "correct_to_wrong": 304,
+          "correct_to_correct": 1783
+        },
+        "unreplayed_all_orders_transitions": {
+          "wrong_to_wrong": 433,
+          "wrong_to_correct": 68,
+          "correct_to_wrong": 56,
+          "correct_to_correct": 315
+        }
+      },
+      "pathvqa": {
+        "memory": {
+          "n": 169,
+          "flips": 0
+        },
+        "unreplayed_view_transitions": {
+          "wrong_to_wrong": 4198,
+          "wrong_to_correct": 5,
+          "correct_to_wrong": 1,
+          "correct_to_correct": 5206
+        }
+      }
+    },
+    "final_average_accuracy": 0.46473861431877445,
+    "final_minus_peak": {
+      "medbook": -0.0461538461538461,
+      "pathvqa": 0.0
+    },
+    "backward_transfer": -0.006494033207565697,
+    "plasticity": {
+      "medbook": 0.6307692307692307,
+      "pathvqa": 0.2968525323534111,
+      "slake": 0.4795821462488129
+    }
+  }
+}

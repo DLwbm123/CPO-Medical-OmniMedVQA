@@ -32,7 +32,7 @@ class StepTiming(TrainerCallback):
         self.started = clock['started']
         self.total_steps = protocol['updates'] * (4-stage)
         self.eval_reserve = 3600 if stage == 2 else 1800
-        self.limit = protocol['projected_wall_limit_seconds']
+        self.limit = protocol.get('projected_wall_limit_seconds', 72_000)
         self.rows = []
 
     def on_step_begin(self, *args, **kwargs):
@@ -41,11 +41,12 @@ class StepTiming(TrainerCallback):
     def on_step_end(self, args, state, control, **kwargs):
         device = torch.device('cuda', torch.cuda.current_device())
         seconds = torch.tensor(time.monotonic()-self.begin, device=device, dtype=torch.float64)
-        peak = torch.tensor(torch.cuda.max_memory_allocated(device), device=device)
+        peak = torch.tensor([torch.cuda.max_memory_allocated(device), torch.cuda.max_memory_reserved(device)], device=device)
         peaks = [torch.empty_like(peak) for _ in range(dist.get_world_size())]
         dist.all_reduce(seconds, op=dist.ReduceOp.MAX)
         dist.all_gather(peaks, peak)
-        row = {'step':state.global_step, 'seconds':float(seconds), 'peak_allocated_bytes':[int(x) for x in peaks]}
+        row = {'step':state.global_step, 'seconds':float(seconds),
+               'peak_allocated_bytes':[int(x[0]) for x in peaks], 'peak_reserved_bytes':[int(x[1]) for x in peaks]}
         self.rows.append(row)
         stop = torch.zeros((), device=device, dtype=torch.int)
         if dist.get_rank() == 0:
@@ -229,6 +230,8 @@ class V3Trainer(FixedPromptControlTrainer):
             step, kind, losses = self.bound_step
             coefficient = self.weights[kind]
             fisher_coefficient = max(self.weights.values()) if self.fisher else 0.
+            if self.spec.get('memory_smoke'):
+                fisher_coefficient = 0.5  # Exercise the penalty buffers even at the zero-flip first step.
             after_projection = (lambda: self.fisher.apply(engine, fisher_coefficient)) if fisher_coefficient else None
             stats = combine_replay_gradient(engine, losses, coefficient, project=self.spec['projection'],
                                             after_projection=after_projection)
@@ -241,6 +244,8 @@ class V3Trainer(FixedPromptControlTrainer):
                          fisher_coefficient=fisher_coefficient, postclip_retention_norm=retention*scale,
                          retention_to_total_norm=retention/norm if norm else None,
                          postclip_replay_coefficient=coefficient*scale, postclip_fisher_coefficient=fisher_coefficient*scale)
+            for component in ('projection','replay','fisher'):
+                stats[f'postclip_{component}_norm'] = stats[f'preclip_{component}_norm'] * scale
             self.gradient_history.append(stats)
 
         wrapper.backward = backward
@@ -292,12 +297,12 @@ def main():
         if ref is None or Path(ref.config._name_or_path).resolve() != initial.resolve():
             raise RuntimeError('native TRL KL did not use the stage-start checkpoint')
     trainer.batched_same_prompt_generation = bool(protocol.get('batched_same_prompt_generation'))
-    if any(protocol.get(k) for k in ('r1_beta','fisher_tr','dynamic_sampling','batched_same_prompt_generation')):
-        clock = json.loads((out/'clock.json').read_text())
-        trainer.add_callback(StepTiming(destination, clock, protocol, stage))
+    clock = json.loads((out/'clock.json').read_text())
+    trainer.add_callback(StepTiming(destination, clock, protocol, stage))
     trainer.train()
     omega = trainer.fisher.apply(trainer.boundary_engine, audit=True) if getattr(trainer, 'fisher', None) else None
-    trainer.save_model(str(destination/'model'))
+    if not protocol.get('memory_smoke'):
+        trainer.save_model(str(destination/'model'))
     if dist.get_rank() == 0:
         report = {'updates':trainer.state.global_step, 'audits':trainer.audit_history,
                   'gradient_geometry':getattr(trainer,'gradient_history',[]), 'logs':trainer.state.log_history}

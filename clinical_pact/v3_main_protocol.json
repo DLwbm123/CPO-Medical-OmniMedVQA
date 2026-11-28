@@ -21,8 +21,9 @@
   "fisher_q": 0.037,
   "fisher_samples": 512,
   "fisher_gamma": null,
-  "fisher_gamma_reference": "series_20261127/calibration/fisher_correct_choices_seed100.json",
-  "fisher_calibration_checkpoint": "revision_20261126/attribution/s1/model",
+  "fisher_gamma_reference": "series_20261127/calibration/fisher_candidate_choices_seed100.json",
+  "fisher_calibration_checkpoint": "series_20261127/run11/s2/model",
+  "fisher_calibration_precision": "The saved GSPO-prime endpoint is BF16. BF16 rounding can inflate calibration energy and reduce gamma relative to FP32 master-to-master calibration. All seeds reuse the same measured gamma.",
   "dynamic_sampling": false,
   "batched_same_prompt_generation": false,
   "stage_kl_diagnostic": false,
@@ -31,7 +32,7 @@
   "projected_wall_limit_seconds": 72000,
   "audit_guard": "New references are selected and immediately re-scored on the actual training stack, before the first update of each stage. Any newly anchored flip aborts. Previously anchored views remain fixed and any inherited flips are reported and used by the dual controller.",
   "evaluation": "All learned tasks on their frozen validation splits. MedBook semantic probe uses four orders even for comparators, PathVQA semantic probe uses fixed binary answers. Candidate pools have 338 rows each. Outside-memory probes exclude all pool candidates and consist of previously trained rows. PathVQA validation reports binary balanced accuracy, predicted yes fraction, and deterministic full exact-match. Test data stay sealed.",
-  "first_round_gate": "Continue the main queue unless both the baseline lacks measurable forgetting and v3 lacks retention advantage. Baseline measurable forgetting is macro unreplayed flip rate at least 0.10 or final-minus-peak macro accuracy at most -0.03, using MedBook all-order correctness and PathVQA binary accuracy. The prior retention target was at most 0.6 times the baseline flip rate. Freeze any sequence strengthening before comparative runs on that sequence.",
+  "first_round_gate": "Use the single-GPU seed-100 no-memory control. Repeat v3 only if its common-eligible unreplayed flip rate is at most 0.6 times a positive baseline rate and its PathVQA acquisition accuracy is at least the control's. Otherwise the next candidate is seed-100 R1+C3, after the actual-model memory check. Report measurable baseline forgetting separately.",
   "max_wall_seconds": 82800,
   "output_guard_bytes": 36000000000
 }

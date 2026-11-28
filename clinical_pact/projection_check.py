@@ -1,4 +1,4 @@
-"""Compare ZeRO-3 projection against explicitly assembled full gradients."""
+"""Validate BF16 ZeRO-3 against analytic gradients, including padded partitions."""
 import json
 import os
 from pathlib import Path
@@ -9,42 +9,71 @@ from deepspeed.utils import (safe_get_full_grad, safe_get_local_fp32_param, safe
 import torch
 import torch.distributed as dist
 
+from .decision_fisher import FisherPenalty, shard_bounds
 from .shard_projection import combine_replay_gradient
 
 
-def check_fisher(engine, param, rank, world, dtype, out):
-    from .decision_fisher import FisherPenalty
+def analytic_grad(weights, x):
+    first, second = weights
+    x = x.float().flatten()
+    return [second.sum(0).outer(x).flatten(), (first @ x).repeat(second.size(0))]
 
+
+def check_fisher(engine, params, weights, rank, world, dtype, out):
     inputs = [torch.tensor([[i+1, 0.5*i, 1-i]], device=engine.device, dtype=dtype) for i in range(4)]
-    expected = torch.cat(inputs).float().square().mean(0).repeat(2)
-    diagonal = torch.zeros_like(safe_get_local_fp32_param(param))
+    gradients = list(zip(*(analytic_grad(weights, x) for x in inputs), strict=True))
+    diagonal = [torch.zeros_like(safe_get_local_fp32_param(p)) for _,p in params]
     for x in inputs:
         engine.optimizer.zero_grad(set_to_none=True)
         engine.set_gradient_accumulation_boundary(True)
         engine.backward(engine(x).sum(), scale_wrt_gas=False)
-        diagonal.add_(safe_get_local_grad(param).square() / len(inputs))
-    size = diagonal.numel()
-    slots = torch.empty(size*world, device=engine.device)
-    dist.all_gather_into_tensor(slots, diagonal)
-    torch.testing.assert_close(slots, expected, rtol=0, atol=0)
-    ready = safe_get_local_fp32_param(param).clone()
-    anchors = ready.cpu()
-    displaced = ready.add(0.00002)
-    safe_set_local_fp32_param(param, displaced)
-    original = safe_get_full_grad(param).clone()
+        for (_,p), f in zip(params, diagonal, strict=True):
+            f.add_(safe_get_local_grad(p).square() / len(inputs))
+
+    entries, targets, padding, tails = {}, {}, {}, {}
+    expected_force_sq = 0.
+    for (name,p), local_f, samples in zip(params, diagonal, gradients, strict=True):
+        start, end = shard_bounds(p, rank)
+        size = local_f.numel()
+        valid = end - start
+        expected_diagonal = torch.stack(samples).square().mean(0)
+        torch.testing.assert_close(local_f[:valid], expected_diagonal[start:end], rtol=0, atol=0)
+        tails[name] = safe_get_local_grad(p)[valid:].clone()
+        padding[name] = size * world - p.ds_numel
+        master = safe_get_local_fp32_param(p).clone()
+        changed = master.clone()
+        changed[:valid].add_(0.00002)
+        safe_set_local_fp32_param(p, changed)
+        local_force = torch.zeros_like(master)
+        local_force[:valid] = (changed[:valid]-master[:valid]) * local_f[:valid] * (2*.5*2048.)
+        slots = torch.empty(size * world, device=engine.device)
+        dist.all_gather_into_tensor(slots, local_force)
+        force = slots[:p.ds_numel]
+        expected_force_sq += float(force.double().square().sum())
+        targets[name] = (safe_get_full_grad(p).flatten() + force).to(dtype).float()
+        indices = torch.arange(start, end, dtype=torch.int32)
+        entries[name] = (indices, local_f[:valid].cpu(), master[:valid].cpu())
+
+    if world == 2 and padding != {'0.weight':1, '1.weight':0}:
+        raise ValueError('expected exactly one padded coordinate in the 15-element parameter')
     path = out/f'test_shard_{rank}.pt'
-    indices = torch.arange(rank*size, (rank+1)*size, dtype=torch.int32)
-    torch.save({'rank':rank, 'world_size':world, 'entries':{'weight':(indices, diagonal.cpu(), anchors)}}, path)
+    torch.save({'rank':rank,'world_size':world,'entries':entries}, path)
     penalty = FisherPenalty(path, gamma=2048.)
-    expected_force = (displaced-ready) * diagonal * (2*.5*2048.)
-    dist.all_gather_into_tensor(slots, expected_force)
-    target = (original.flatten() + slots).to(dtype).float()
-    measured_energy = penalty.apply(engine, .5, audit=True)
-    error = float((safe_get_full_grad(param).flatten()-target).abs().max())
+    measured_energy = penalty.apply(engine, audit=True)
+    force_norm = penalty.apply(engine, .5)
     if measured_energy <= 0:
         raise ValueError('Fisher must register a nonzero master-weight displacement')
-    torch.testing.assert_close(safe_get_full_grad(param).flatten(), target, rtol=0, atol=0)
-    return {'samples':len(inputs), 'injected_gradient_max_abs_error':error, 'omega_f':measured_energy}
+    torch.testing.assert_close(force_norm, expected_force_sq**.5)
+    error = 0.
+    for name,p in params:
+        target = targets[name]
+        actual = safe_get_full_grad(p).flatten()
+        error = max(error, float((actual-target).abs().max()))
+        torch.testing.assert_close(actual, target, rtol=0, atol=0)
+        start, end = shard_bounds(p, rank)
+        torch.testing.assert_close(safe_get_local_grad(p)[end-start:], tails[name], rtol=0, atol=0)
+    return {'samples':len(inputs),'parameter_padding':padding,'injected_gradient_max_abs_error':error,
+            'omega_f':measured_energy,'fisher_force_norm':force_norm}
 
 
 def main():
@@ -55,53 +84,54 @@ def main():
     world = dist.get_world_size()
     if world not in (1, 2):
         raise ValueError('the test requires one or two actual ZeRO ranks')
-    torch.manual_seed(7)
     dtype = torch.bfloat16
-    network = torch.nn.Linear(3, 2, bias=False).to(device='cuda', dtype=dtype)
-    opt = torch.optim.AdamW(network.parameters(), lr=0.03, weight_decay=0, foreach=False)
-    config = {
-        'train_micro_batch_size_per_gpu': 1, 'gradient_accumulation_steps': 4,
-        'zero_optimization': {'stage': 3, 'overlap_comm': False, 'contiguous_gradients': True},
-        'zero_allow_untested_optimizer': True,
-    }
-    config['bf16'] = {'enabled': True}
+    network = torch.nn.Sequential(torch.nn.Linear(3, 5, bias=False),
+                                  torch.nn.Linear(5, 2, bias=False)).to(device='cuda', dtype=dtype)
+    weights = [torch.tensor([[1,0,0],[0,1,0],[0,0,1],[-1,0,0],[0,0,1]], device='cuda', dtype=torch.float32),
+               torch.full((2,5), .5, device='cuda')]
+    with torch.no_grad():
+        for p, w in zip(network.parameters(), weights, strict=True):
+            p.copy_(w)
+    opt = torch.optim.AdamW(network.parameters(), lr=0., weight_decay=0., foreach=False)
+    config = {'train_micro_batch_size_per_gpu':1,'gradient_accumulation_steps':4,
+              'zero_optimization':{'stage':3,'overlap_comm':False,'contiguous_gradients':True},
+              'zero_allow_untested_optimizer':True,'bf16':{'enabled':True}}
     engine, *_ = deepspeed.initialize(model=network, optimizer=opt, config=config)
-    params = list(engine.module.parameters())
+    params = list(engine.module.named_parameters())
     device = engine.device
-    coef = 0.2
+    coef = .2
     full = []
     per_rank = 8 // world
-    for sign, project in ((1, False), (-1, True), (1, True)):
-        x = torch.tensor([[1 + rank, 0.5, 2]], device=device, dtype=dtype)
-        views = [torch.tensor([[sign * (1 + i + rank), 1 + i % 3, 0.5 * (i - 2)]],
-                              device=device, dtype=dtype) for i in range(per_rank)]
+    for sign, project in ((1,False),(-1,True),(1,True)):
+        x = torch.tensor([[1+rank,.5,2]], device=device, dtype=dtype)
+        views = [torch.tensor([[sign*(1+i+rank),1+i%3,.5*(i-2)]], device=device, dtype=dtype) for i in range(per_rank)]
         for micro in range(4):
             engine.set_gradient_accumulation_boundary(micro == 3)
             engine.backward(engine(x).sum())
-        # For sum(linear(x)), both rows of the weight gradient are exactly x.
-        explicit_new = x.float().repeat(2, 1).flatten()
-        explicit_mem = torch.stack(views).float().mean(0).repeat(2, 1).flatten()
-        for g in (explicit_new, explicit_mem):
+
+        explicit_new = torch.cat(analytic_grad(weights,x))
+        explicit_mem = torch.stack([torch.cat(analytic_grad(weights,view)) for view in views]).mean(0)
+        for g in (explicit_new,explicit_mem):
             dist.all_reduce(g)
             g.div_(world)
-        torch.testing.assert_close(safe_get_full_grad(params[0]).flatten(), explicit_new)
-        correction = max(0.0, -float(explicit_new @ explicit_mem) / float(explicit_mem @ explicit_mem)) if project else 0.
-        scale = coef + correction
-        expected = explicit_new.add(explicit_mem, alpha=scale).to(dtype).float()
-        outcome = combine_replay_gradient(engine, [lambda view=view: engine(view).sum() for view in views],
-                                          coef, project=project)
-        actual = safe_get_full_grad(params[0]).flatten()
+        original = torch.cat([safe_get_full_grad(p).flatten() for _,p in params])
+        torch.testing.assert_close(original, explicit_new)
+        correction = max(0., -float(explicit_new @ explicit_mem) / float(explicit_mem @ explicit_mem)) if project else 0.
+        expected = explicit_new.add(explicit_mem,alpha=coef+correction).to(dtype).float()
+        outcome = combine_replay_gradient(engine,[lambda view=view:engine(view).sum() for view in views],
+                                          coef,project=project)
+        actual = torch.cat([safe_get_full_grad(p).flatten() for _,p in params])
         torch.testing.assert_close(actual, expected, rtol=2e-6, atol=5e-7)
-        torch.testing.assert_close(outcome['memory_norm'], float(explicit_mem.norm()), rtol=2e-6, atol=5e-7)
+        torch.testing.assert_close(outcome['memory_norm'],float(explicit_mem.norm()),rtol=2e-6,atol=5e-7)
         if outcome['projection_triggered'] != bool(correction):
             raise ValueError('known gradient geometry disagrees with the projection flag')
-        full.append({'conflict': sign < 0, 'projection':project, 'max_abs_error': float((actual - expected).abs().max())})
+        full.append({'conflict':sign<0,'projection':project,'max_abs_error':float((actual-expected).abs().max())})
         engine.step()
     destination = Path(os.environ['OUT'])
-    fisher = check_fisher(engine, params[0], rank, world, dtype, destination)
+    fisher = check_fisher(engine, params, weights, rank, world, dtype, destination)
     if rank == 0:
-        (destination/'projection_check.json').write_text(json.dumps({'world_size': world, 'gradient_accumulation_steps': 4,
-                    'replay_losses_per_rank':per_rank, 'dtype':str(dtype), 'cases':full,'fisher':fisher}, indent=2) + '\n')
+        (destination/'projection_check.json').write_text(json.dumps({'world_size':world,'gradient_accumulation_steps':4,
+            'replay_losses_per_rank':per_rank,'dtype':str(dtype),'cases':full,'fisher':fisher},indent=2)+'\n')
     dist.destroy_process_group()
 
 

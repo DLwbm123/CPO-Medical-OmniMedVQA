@@ -61,8 +61,9 @@ def combine_replay_gradient(engine, replay_losses, coefficient, *, project=True,
             else:
                 safe_set_local_grad(p, grad.add(memory, alpha=retention_scale))
     retention_norm = abs(retention_scale) * old_sq ** 0.5
+    fisher_norm = 0.
     if after_projection is not None:
-        after_projection()
+        fisher_norm = after_projection()
         squared = stats.new_zeros(())
         for p, original in zip(params, new, strict=True):
             applied = gradient(p).flatten()
@@ -73,4 +74,6 @@ def combine_replay_gradient(engine, replay_losses, coefficient, *, project=True,
         retention_norm = float(squared.sqrt())
     return {'dot': dot, 'new_norm': new_sq ** 0.5, 'memory_norm': old_sq ** 0.5,
             'projection_triggered': bool(correction), 'coefficient': coefficient,
-            'projection_coefficient': correction, 'preclip_retention_norm': retention_norm}
+            'projection_coefficient':correction, 'preclip_retention_norm':retention_norm,
+            'preclip_projection_norm':correction*old_sq**0.5, 'preclip_replay_norm':abs(coefficient)*old_sq**0.5,
+            'preclip_fisher_norm':fisher_norm}

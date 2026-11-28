@@ -1,9 +1,13 @@
 {
-  "scope": "After a complete, corrected three-task comparison, dispatch the matched repeats in sequence on GPU 5.",
+  "scope": "When explicitly launched, wait for run10, score its frozen checkpoints and run the matched seed-100 single-GPU baseline with the shared MedBook start. Route by retention before running more seeds.",
   "main_run": "run10",
-  "baseline_training_run": "run2",
-  "baseline_report_run": "run3",
+  "main_rescore": {"run":"run13","seed":100,"mode":"v3","frozen_report_of":"run10","max_wall_seconds":3600},
+  "matched_baseline": {"run":"run11","seed":100,"mode":"no_memory"},
   "lanes": [[5]],
+  "retention_fallback": [
+    {"run":"run14","seed":100,"mode":"v3","r1_beta":0.04,"fisher_tr":true,"memory_smoke":true,"updates":1,"fisher_samples":8,"fisher_gamma":1.0,"max_wall_seconds":3600},
+    {"run":"run12","seed":100,"mode":"v3","r1_beta":0.04,"fisher_tr":true,"memory_smoke_receipt":"run14"}
+  ],
   "queue": [
     {"run":"run4","seed":101,"mode":"v3"},
     {"run":"run5","seed":102,"mode":"v3"},

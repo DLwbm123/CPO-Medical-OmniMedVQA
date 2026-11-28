@@ -10,10 +10,12 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from clinical_pact.decision_fisher import FisherPenalty, global_top_indices, merge_fisher
+from clinical_pact.decision_fisher import FisherPenalty, global_top_indices, merge_fisher, shard_bounds
 from clinical_pact.dynamic_sampling import uniform_rewards
-from clinical_pact.fisher_boundary import calibrate, shared_gamma
+from clinical_pact.fisher_boundary import calibrate, fisher_candidates, shared_gamma
 from clinical_pact.rollout_inputs import unpadded_equal_prefixes
+from clinical_pact.supervise_main_queue import first_gate
+from clinical_pact.supervise_v3 import retained_metrics
 from clinical_pact.v3_eval import categorical_kl, frozen_retention_metrics, restore_medbook_cache, save_medbook_cache
 
 
@@ -30,18 +32,22 @@ def check_shards(rank, store, state_path):
 
         # Two module names refer to the same physical parameter, sharded into two equal parts.
         model = torch.nn.Module()
-        model.embed = torch.nn.Embedding(2, 2)
-        model.head = torch.nn.Linear(2, 2, bias=False)
+        model.embed = torch.nn.Embedding(3, 1)
+        model.head = torch.nn.Linear(1, 3, bias=False)
         model.head.weight = model.embed.weight
         parameter = model.embed.weight
         assert tuple(dict(model.named_parameters())) == ('embed.weight',)
         parameter.ds_tensor = torch.tensor([2., 3.]) + rank
+        parameter.ds_numel = 3
         gradient = torch.ones(2)
         reference = torch.tensor([0., 1.])
         f = torch.tensor([2., 3.])
         indices = torch.tensor([0, 1], dtype=torch.int32) + rank*2
+        start, end = shard_bounds(parameter, rank)
+        assert (start, end) == ((0, 2) if rank == 0 else (2, 3))
+        valid = end-start
         path = Path(state_path)/f'{rank}.pt'
-        torch.save({'rank':rank, 'world_size':2, 'entries':{'embed.weight':(indices, f, reference)}}, path)
+        torch.save({'rank':rank, 'world_size':2, 'entries':{'embed.weight':(indices[:valid], f[:valid], reference[:valid])}}, path)
         engine = SimpleNamespace(module=model, device='cpu')
         penalty = FisherPenalty(path, gamma=.25)
         api = SimpleNamespace(safe_get_local_grad=lambda p:gradient.clone(),
@@ -50,15 +56,54 @@ def check_shards(rank, store, state_path):
         with patch.dict(sys.modules, {'deepspeed.utils':api}):
             actual_energy = penalty.apply(engine, .5, audit=True)
         current = parameter.ds_tensor.clone().requires_grad_()
-        energy = (f * (current - reference).square()).sum()
+        energy = (f[:valid] * (current[:valid] - reference[:valid]).square()).sum()
         expected_force, = torch.autograd.grad(.25*.5*energy, current)
         torch.testing.assert_close(gradient, 1 + expected_force)
-        assert actual_energy == 65.
+        assert actual_energy == 38.
     finally:
         dist.destroy_process_group()
 
 
 class ExtensionTests(unittest.TestCase):
+    def test_fisher_uses_only_disjoint_replay_candidates(self):
+        pool, probe = [{'id':'c'}], [{'id':'p'}]
+        sizes = {'candidate':1, 'unreplayed':1}
+        with patch('clinical_pact.fisher_boundary.memory_pool', return_value=(pool,probe)):
+            self.assertEqual(fisher_candidates(None,None,'medbook',sizes),pool)
+        with patch('clinical_pact.fisher_boundary.memory_pool', return_value=(pool,pool)):
+            with self.assertRaisesRegex(ValueError,'overlap'):
+                fisher_candidates(None,None,'pathvqa',sizes)
+
+    def test_queue_routes_failed_retention_to_extension(self):
+        with tempfile.TemporaryDirectory() as directory:
+            study = Path(directory)
+            for run in ('v3','control'):
+                for i in (1,2,3):
+                    dst = study/run/f'e{i}'/'private'
+                    dst.mkdir(parents=True)
+                    med = [1]*8 if i < 3 else [0]*4+[1]*4
+                    path = [1,1] if i < 3 else [0,1]
+                    (dst/'decisions.json').write_text(json.dumps({
+                        'medbook':{'unreplayed':med}, 'pathvqa':{'unreplayed':path}}))
+                (study/run/'aggregate.json').write_text(json.dumps({
+                    'semantic_validation_matrix':{}, 'measurable_forgetting_gate':True,
+                    'validation_matrix':{'s2':{'pathvqa':.4}}}))
+            self.assertEqual(first_gate(study,'v3','control')['route'],'try_r1_c3')
+            (study/'v3/e3/private/decisions.json').write_text(json.dumps({
+                'medbook':{'unreplayed':[1]*8},'pathvqa':{'unreplayed':[1,1]}}))
+            self.assertEqual(first_gate(study,'v3','control')['route'],'repeat_v3')
+            (study/'v3/aggregate.json').write_text(json.dumps({
+                'semantic_validation_matrix':{}, 'validation_matrix':{'s2':{'pathvqa':.3}}}))
+            gate = first_gate(study,'v3','control')
+            self.assertTrue(gate['v3_retention_gate'])
+            self.assertFalse(gate['pathvqa_plasticity_gate'])
+            self.assertEqual(gate['route'],'try_r1_c3')
+
+    def test_retained_binary_accuracy_is_derived_from_frozen_counts(self):
+        counts = {'gold_yes_pred_yes':1000,'gold_yes_pred_other':712,'gold_no_pred_no':900,'gold_no_pred_yes':513}
+        tasks = retained_metrics({'tasks':{'pathvqa':counts}})
+        self.assertAlmostEqual(tasks['pathvqa']['yes_no_accuracy'], 1900/3125)
+
     def test_gate_uses_semantic_accuracy_and_task_macro(self):
         def stage(medbook, pathvqa=None):
             tasks = {'medbook':{'accuracy':.9, 'all_four_orders_accuracy':medbook}}

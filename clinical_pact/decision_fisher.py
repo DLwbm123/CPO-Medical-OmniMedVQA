@@ -63,6 +63,11 @@ def quadratic(delta, weights):
     return energy, 2 * weights * delta
 
 
+def shard_bounds(param, rank):
+    start = rank * param.ds_tensor.numel()
+    return min(start, param.ds_numel), min(start + param.ds_tensor.numel(), param.ds_numel)
+
+
 class FisherPenalty:
     def __init__(self, path, gamma):
         self.state = torch.load(path, map_location='cpu', weights_only=True, mmap=True)
@@ -79,19 +84,25 @@ class FisherPenalty:
         rank = dist.get_rank()
         parameters = dict(engine.module.named_parameters())  # Tied parameters occur once.
         energy = torch.zeros((), device=engine.device, dtype=torch.float64)
+        force_sq = torch.zeros_like(energy)
         for name, (positions, diagonal, anchors) in self.state['entries'].items():
             p = parameters[name]
+            start, end = shard_bounds(p, rank)
             current = safe_get_local_fp32_param(p).flatten()
             grad = safe_get_local_grad(p).flatten() if coefficient else None
             for indices, f, anchor in zip(positions.split(1_048_576), diagonal.split(1_048_576),
                                           anchors.split(1_048_576), strict=True):
-                local = indices.to(engine.device, dtype=torch.long).sub_(rank * current.numel())
+                if int(indices[0]) < start or int(indices[-1]) >= end:
+                    raise ValueError('Fisher coordinates reach outside the real local parameter shard')
+                local = indices.to(engine.device, dtype=torch.long).sub_(start)
                 f, anchor = f.to(engine.device), anchor.to(engine.device)
                 delta = current[local] - anchor
                 if audit:
                     energy += quadratic(delta, f)[0]
                 if grad is not None:
-                    grad[local] = grad[local].add_(2 * f * delta, alpha=coefficient * self.gamma)
+                    force = (2 * f * delta) * (coefficient * self.gamma)
+                    force_sq += force.double().square().sum()
+                    grad[local] = grad[local] + force
             if grad is not None:
                 safe_set_local_grad(p, grad)
         if audit:
@@ -99,3 +110,7 @@ class FisherPenalty:
             if not torch.isfinite(energy):
                 raise FloatingPointError('nonfinite Fisher energy')
             return float(energy)
+        if coefficient:
+            dist.all_reduce(force_sq)
+            return float(force_sq.sqrt())
+        return 0.

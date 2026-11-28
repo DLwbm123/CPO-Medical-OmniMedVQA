@@ -34,73 +34,95 @@ def first_gate(study, main_run, baseline_run):
             rates[k].append(sum(not end[j] for j in common)/len(common))
     b_rate,a_rate = (sum(task_rates)/2 for task_rates in rates)
     strong = b_rate > 0 and a_rate <= .6*b_rate
+    a_path = main['validation_matrix']['s2']['pathvqa']
+    b_path = control['validation_matrix']['s2']['pathvqa']
+    plasticity = a_path >= b_path
+    route = 'repeat_v3' if strong and plasticity else 'try_r1_c3'
     return {'baseline_forgetting_gate':control['measurable_forgetting_gate'],
             'baseline_common_flip_rate':b_rate,'v3_common_flip_rate':a_rate,
-            'v3_retention_gate':strong,'continue':bool(control['measurable_forgetting_gate'] or strong)}
+            'v3_retention_gate':strong,'pathvqa_plasticity_gate':plasticity,
+            'baseline_pathvqa_acquisition':b_path,'v3_pathvqa_acquisition':a_path,'route':route}
 
 
 def main():
     out,root = (Path(os.environ[k]) for k in ('OUT','ROOT'))
     cfg = read(out/'protocol.json'); study=out.parent
-    main_run,baseline_run = cfg['main_run'],cfg['baseline_report_run']
-    dependencies = [study/d/'status.json' for d in (main_run,baseline_run)]
-    deadline=max(read(study/main_run/'clock.json')['deadline'],read(study/cfg['baseline_training_run']/'clock.json')['started']+57600)
+    main_run = cfg['main_run']
+    original_status = study/main_run/'status.json'
+    deadline = read(study/main_run/'clock.json')['deadline']
     while time.time() < deadline:
-        statuses = [read(p)['reason'] if p.exists() else None for p in dependencies]
-        if any(s not in ('completed',None) for s in statuses) or all(statuses):
+        if original_status.exists():
             break
         time.sleep(30)
-    if not all(p.exists() and read(p)['reason']=='completed' for p in dependencies):
+    if not original_status.exists() or read(original_status)['reason'] != 'completed':
         write_json(out/'status.json',{'reason':'dependency_incomplete'});return
-    gate=first_gate(study,main_run,baseline_run)
-    write_json(out/'gate.json',gate)
-    if not gate['continue']:
-        write_json(out/'status.json',{'reason':'needs_stronger_sequence'});return
-    pending=list(cfg['queue']);running={};receipt=[]
-    template=read(study/main_run/'protocol.json')
+    if cfg['lanes'] != [[5]]:
+        raise ValueError('this queue is restricted to GPU 5')
+    defaults = read(Path(__file__).with_name('v3_main_protocol.json'))
+    template = {**defaults, **read(study/main_run/'protocol.json')}
     template.pop('original_clock',None)
-    if template.get('single_gpu') and cfg['lanes'] != [[5]]:
-        raise ValueError('the current study is restricted to GPU 5')
-    idle_limit=time.time()+14400
-    while pending or running:
-        for lane, (job, process) in list(running.items()):
-            if process.poll() is None:
-                continue
-            dst=study/job['run']; latest=dst/'status.json'
-            receipt.append({'run':job['run'],'seed':job['seed'],'mode':job['mode'],
-                            'exit_code':process.returncode,'report':read(latest) if latest.exists() else None})
-            del running[lane]
-            idle_limit=time.time()+14400
-        if pending:
-            query=subprocess.check_output(['nvidia-smi','--query-gpu=index,memory.free',
+    template['first_round_gate'] = defaults['first_round_gate']
+    if not template.get('single_gpu'):
+        raise ValueError('seed-100 comparison requires the existing single-GPU v3 run')
+    finished = []
+
+    def run(job):
+        dst = study/job['run']
+        status = dst/'status.json'
+        run_spec = {**template, **{k:v for k,v in job.items() if k != 'run'}}
+        if status.exists():
+            previous = read(dst/'protocol.json')
+            if any(previous.get(k) != v for k,v in run_spec.items() if k not in ('fisher_gamma','fisher_actual_samples')):
+                raise ValueError('existing queued run uses a different protocol')
+            report = read(status)
+            finished.append({'run':job['run'],'report':report,'reused':True})
+            if report['reason'] == 'completed':
+                return True
+            why = 'single_gpu_memory_smoke_failed' if job.get('memory_smoke') else 'run_failure'
+            write_json(out/'status.json',{'reason':why,'runs':finished})
+            return False
+        idle_limit = time.time()+14400
+        while time.time() < idle_limit:
+            free = subprocess.check_output(['nvidia-smi','--id=5','--query-gpu=memory.free',
                                            '--format=csv,noheader,nounits'],text=True)
-            free={g.strip():int(v) for g,v in (x.split(',') for x in query.splitlines())}
-            for lane,gpus in enumerate(cfg['lanes']):
-                if not pending or lane in running or any(free[str(g)]<60000 for g in gpus):
-                    continue
-                job=pending.pop(0);dst=study/job['run']
-                dst.mkdir()
-                for sub in ('cache/tmp','cache/triton','private'):
-                    (dst/sub).mkdir(parents=True)
-                shutil.copytree(out/'source',dst/'source')
-                run_spec={**template,'seed':job['seed'],'mode':job['mode']}
-                write_json(dst/'protocol.json',run_spec)
-                env={**os.environ,'OUT':str(dst),'CUDA_VISIBLE_DEVICES':','.join(map(str,gpus)),
-                     'PYTHONPATH':str(dst/'source')+':'+str(root/'env/lib/python3.10/site-packages'),
-                     'HF_HOME':str(dst/'cache'),'TMPDIR':str(dst/'cache/tmp'),'TRITON_CACHE_DIR':'cache/triton',
-                     'MODULE':'clinical_pact.supervise_v3'}
-                args=['python','-c','import os,runpy;runpy.run_module(os.environ["MODULE"],run_name="__main__")']
-                with (dst/'launcher.log').open('x') as stream:
-                    process=subprocess.Popen(args,cwd=dst,env=env,start_new_session=True,stdout=stream,stderr=subprocess.STDOUT)
-                (dst/'launcher.pid').write_text(str(process.pid)+'\n')
-                running[lane]=(job,process)
-        write_json(out/'queue.json',{'running':{str(k):v[0] for k,v in running.items()},'pending':pending,'finished':receipt})
-        if pending and not running and time.time()>=idle_limit:
-            write_json(out/'status.json',{'reason':'waiting_for_resources','pending':pending});return
-        if pending or running:
+            if int(free.strip()) >= 60000:
+                break
             time.sleep(30)
-    success=all(x['exit_code']==0 and x['report'] and x['report']['reason']=='completed' for x in receipt)
-    write_json(out/'status.json',{'reason':'completed' if success else 'run_failure','runs':receipt})
+        else:
+            write_json(out/'status.json',{'reason':'waiting_for_resources','pending':job,'runs':finished})
+            return False
+        dst.mkdir()
+        for sub in ('cache/tmp','cache/triton','private'):
+            (dst/sub).mkdir(parents=True)
+        shutil.copytree(out/'source',dst/'source')
+        write_json(dst/'protocol.json',run_spec)
+        env={**os.environ,'OUT':str(dst),'CUDA_VISIBLE_DEVICES':'5',
+             'PYTHONPATH':str(dst/'source')+':'+str(root/'env/lib/python3.10/site-packages'),
+             'HF_HOME':str(dst/'cache'),'TMPDIR':str(dst/'cache/tmp'),'TRITON_CACHE_DIR':'cache/triton',
+             'MODULE':'clinical_pact.supervise_v3'}
+        args=['python','-c','import os,runpy;runpy.run_module(os.environ["MODULE"],run_name="__main__")']
+        with (dst/'launcher.log').open('x') as stream:
+            process=subprocess.Popen(args,cwd=dst,env=env,start_new_session=True,stdout=stream,stderr=subprocess.STDOUT)
+            (dst/'launcher.pid').write_text(str(process.pid)+'\n')
+            write_json(out/'queue.json',{'running':job,'finished':finished})
+            code = process.wait()
+        report = read(status) if status.exists() else None
+        finished.append({'run':job['run'],'exit_code':code,'report':report})
+        ok = code == 0 and report and report['reason'] == 'completed'
+        if not ok:
+            why = 'single_gpu_memory_smoke_failed' if job.get('memory_smoke') else 'run_failure'
+            write_json(out/'status.json',{'reason':why,'runs':finished})
+        return ok
+
+    rescore = cfg['main_rescore']
+    baseline = cfg['matched_baseline']
+    if not all(run(job) for job in (rescore,baseline)):
+        return
+    gate = first_gate(study,rescore['run'],baseline['run'])
+    write_json(out/'gate.json',gate)
+    jobs = cfg['queue'] if gate['route'] == 'repeat_v3' else cfg['retention_fallback']
+    if all(run(job) for job in jobs):
+        write_json(out/'status.json',{'reason':'completed','runs':finished})
 
 
 if __name__=='__main__':

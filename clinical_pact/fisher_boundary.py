@@ -11,17 +11,21 @@ import time
 import torch
 import torch.distributed as dist
 
-from .answer_decisions import PREFIX
-from .data import load_split
-from .decision_fisher import global_top_indices, merge_fisher
+from .decision_fisher import global_top_indices, merge_fisher, shard_bounds
 from .score_retained_checkpoints import write_json
-from .scoring import normalize
-from .v3_memory import TASKS, candidate_tokens, decision_views, fp32_scores, margin
+from .v3_memory import candidate_tokens, decision_views, fp32_scores, margin, memory_pool
+
+
+def fisher_candidates(root, reference, kind, sizes):
+    pool, probe = memory_pool(root, reference, kind)
+    if len(pool) != sizes['candidate'] or len(probe) != sizes['unreplayed']:
+        raise ValueError('Fisher candidate or unreplayed probe size differs from the frozen split')
+    if {row['id'] for row in pool} & {row['id'] for row in probe}:
+        raise ValueError('Fisher candidates overlap the unreplayed probe')
+    return pool
 
 
 def eligible_gold_score(model, processor, item, kind, device, tokens):
-    from .multimodal import make_inputs
-
     views = decision_views([item], kind, 4)
     with torch.no_grad():
         for view, target in views:
@@ -34,13 +38,12 @@ def eligible_gold_score(model, processor, item, kind, device, tokens):
                 raise RuntimeError('Fisher selection differs across ZeRO ranks')
             if not bool(correct):
                 return None
-    _, target = views[0]
-    features = make_inputs(processor, item, device=device, assistant_prefix=PREFIX)
-    logits = model(**features, use_cache=False, logits_to_keep=1).logits[0, -1]
-    return logits.float().log_softmax(-1)[tokens[1][target]]
+    original, target = views[0]
+    logits = fp32_scores(model, processor, original, device, tokens)
+    return logits.log_softmax(-1)[target]
 
 
-def build(root, out, checkpoint, stage, protocol):
+def build(root, out, reference, checkpoint, stage, protocol):
     import deepspeed
     from deepspeed.utils import safe_get_local_fp32_param, safe_get_local_grad, safe_set_local_grad
     from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
@@ -65,16 +68,15 @@ def build(root, out, checkpoint, stage, protocol):
     optimizer = torch.optim.SGD(model.parameters(), lr=0)
     engine, *_ = deepspeed.initialize(model=model, optimizer=optimizer, config=ds_config.config)
     kind = 'medbook' if stage == 2 else 'pathvqa'
-    rows = list(load_split(root/'data/prepared'/TASKS[kind], 'train'))
-    if kind == 'pathvqa':
-        rows = [r for r in rows if normalize(r['answer']) in ('yes', 'no')]
+    pool = fisher_candidates(root, reference, kind, protocol['probe_sizes'][kind])
     n = protocol['fisher_samples']
-    if not 1 <= n <= 512 or not rows:
-        raise ValueError('Fisher requires between 1 and 512 training questions')
-    rows = random.Random(protocol['seed'] + stage).sample(rows, len(rows))
+    if not 1 <= n <= 512 or not pool:
+        raise ValueError('Fisher requires a positive sample cap of at most 512 candidate questions')
+    rows = random.Random(protocol['seed'] + stage).sample(pool, len(pool))
     tokens = candidate_tokens(processor.tokenizer, kind)
     params = {n:p for n,p in engine.module.named_parameters() if p.requires_grad}
-    sizes = {n:max(0, min(p.ds_tensor.numel(), p.ds_numel-rank*p.ds_tensor.numel())) for n,p in params.items()}
+    bounds = {name:shard_bounds(p, rank) for name,p in params.items()}
+    sizes = {name:end-start for name,(start,end) in bounds.items()}
     diagonal = torch.zeros(sum(sizes.values()), dtype=torch.float32, device=device)
     parts = dict(zip(sizes, diagonal.split(list(sizes.values())), strict=True))
     accepted = 0
@@ -115,7 +117,7 @@ def build(root, out, checkpoint, stage, protocol):
         selected = chosen[cursor:end] - start_coord
         if selected.numel() or name in prior:
             weights = parts[name][selected] / mean.float()
-            offsets = rank*p.ds_tensor.numel()
+            offsets = bounds[name][0]
             master = safe_get_local_fp32_param(p).flatten()[:sizes[name]]
             entries[name] = merge_fisher(prior.get(name), master, weights, selected, offsets)
         cursor, start_coord = end, start_coord + sizes[name]
@@ -128,8 +130,11 @@ def build(root, out, checkpoint, stage, protocol):
     count = torch.tensor(sum(state[0].numel() for state in entries.values()), device=device)
     dist.all_reduce(count)
     if rank == 0:
-        write_json(out/f'fisher_s{stage}.json', {'task':kind, 'samples':accepted, 'examined':examined,
-                   'q':protocol['fisher_q'], 'coordinates':int(count), 'seconds':time.monotonic()-start})
+        record = {'task':kind, 'samples':accepted, 'examined':examined, 'candidate_pool':len(pool),
+                  'q':protocol['fisher_q'], 'coordinates':int(count), 'seconds':time.monotonic()-start}
+        write_json(out/f'fisher_s{stage}.json', record)
+        measured = {**protocol.get('fisher_actual_samples',{}),kind:accepted}
+        write_json(out/'protocol.json', {**protocol,'fisher_actual_samples':measured})
     dist.destroy_process_group()
 
 
@@ -179,7 +184,7 @@ def shared_gamma(out, root, reference, protocol):
     recipe = {'seed':100, 'q':protocol['fisher_q'], 'samples':protocol['fisher_samples'],
               'control':protocol['fisher_calibration_checkpoint'],
               'boundary':str((reference/'stage1/model').relative_to(root)),
-              'version':'correct-four-order-fp32-anchor-v1'}
+              'control_precision':'bf16_saved_checkpoint', 'version':'replay-pool-choice-fp32-anchor-v2'}
     if not path.exists():
         if protocol['seed'] != 100:
             raise ValueError('publish the seed-100 Fisher calibration before launching another seed')
@@ -214,7 +219,7 @@ def main():
         return
     stage = int(os.environ['STAGE'])
     endpoint = reference/'stage1/model' if stage == 2 else out/'s2/model'
-    build(root, out, endpoint, stage, protocol)
+    build(root, out, reference, endpoint, stage, protocol)
 
 
 if __name__ == '__main__':
