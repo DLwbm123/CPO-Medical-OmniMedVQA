@@ -65,11 +65,16 @@ def run(out):
     configs = {name:json.loads((out/name).read_text()) for name in
         ('precheck_protocol.json','dev_pilot_protocol.json','confirm_pilot_protocol.json','pilot_protocol.json')}
     pre,dev,conf = (configs[k] for k in ('precheck_protocol.json','dev_pilot_protocol.json','confirm_pilot_protocol.json'))
-    start = time.time()
-    deadline = start+min(pre['max_wall_seconds'],dev['max_wall_seconds'],conf['max_wall_seconds'],23*3600)
-    clock = {'started':start,'deadline':deadline}
-    with (out/'clock.json').open('x') as stream:
-        json.dump(clock,stream)
+    clock_path = out/'clock.json'
+    if clock_path.exists():
+        clock = json.loads(clock_path.read_text())
+    else:
+        start = time.time()
+        deadline = start+min(pre['max_wall_seconds'],dev['max_wall_seconds'],conf['max_wall_seconds'],23*3600)
+        clock = {'started':start,'deadline':deadline}
+        with clock_path.open('x') as stream:
+            json.dump(clock,stream)
+    deadline = clock['deadline']
     phases = []
     public = {}
     limits = {'output_guard_bytes':min(dev['output_guard_bytes'],conf['output_guard_bytes'],48_000_000_000)}
@@ -83,6 +88,7 @@ def run(out):
         write_json(out/'status.json',{'reason':'running' if result['reason']=='completed' else result['reason'],
                                      'phases':phases})
         if result['reason']!='completed':
+            write_json(out/'progress.json',{'phase':name,'state':result['reason']})
             raise SystemExit(1)
     def finish(reason,decision):
         write_json(out/'grounded_result.json',{'outcome':reason,'decision':decision,**public})

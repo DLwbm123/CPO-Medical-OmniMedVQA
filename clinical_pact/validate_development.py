@@ -14,6 +14,7 @@ from .scoring import score_response
 
 
 def load_checkpoint(model_path, device, seed):
+    os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
     torch.cuda.set_device(device)
     set_seed(seed)
     torch.use_deterministic_algorithms(True)
