@@ -1,0 +1,173 @@
+{
+  "training_finished_at": "2026-11-28T18:56:34+08:00",
+  "evaluation_finished_at": "2026-11-28T19:14:42+08:00",
+  "training": {
+    "steps": 200,
+    "applied": 200,
+    "brake_stop": false,
+    "training_labels": 0,
+    "smoke": false,
+    "reference_matches": false,
+    "trainable_scope": "full",
+    "gpu_count": 2
+  },
+  "cost_and_behavior": {
+    "training_seconds": 4617.34421305079,
+    "per_rank_peak_reserved_bytes": [
+      38642122752,
+      38621151232
+    ],
+    "training_questions": 800,
+    "brake_steps": 0,
+    "steps_with_nonzero_policy_advantages": 22,
+    "generated_rollouts": 12800
+  },
+  "validation": {
+    "task": "Fundus",
+    "prompt": "reason",
+    "split": "validation",
+    "modalities": {
+      "CT": {
+        "n": 300,
+        "greedy": 0.86,
+        "greedy_correct": 258,
+        "greedy_invalid": 0
+      },
+      "MRI": {
+        "n": 300,
+        "greedy": 0.7033333333333334,
+        "greedy_correct": 211,
+        "greedy_invalid": 0
+      },
+      "XRay": {
+        "n": 300,
+        "greedy": 0.75,
+        "greedy_correct": 225,
+        "greedy_invalid": 0
+      },
+      "Ultrasound": {
+        "n": 300,
+        "greedy": 0.4033333333333333,
+        "greedy_correct": 121,
+        "greedy_invalid": 0
+      },
+      "Fundus": {
+        "pass1": 0.8238740808823529,
+        "maj8": 0.8235294117647058,
+        "maj16": 0.8235294117647058,
+        "pass8": 0.8253440799396681,
+        "pass16": 0.8253676470588235,
+        "n": 544,
+        "agreement": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.001838235294117647,
+          0.0,
+          0.0,
+          0.001838235294117647,
+          0.0,
+          0.9963235294117647
+        ],
+        "band_coverage": 0.003676470588235294,
+        "pseudo_accuracy": 0.5,
+        "gain": -0.0003446691176470784,
+        "predicted_marginal": {
+          "A": 0.19852941176470587,
+          "B": 0.2920496323529412,
+          "C": 0.2328814338235294,
+          "D": 0.27653952205882354,
+          "invalid": 0.0
+        },
+        "gold_marginal": {
+          "A": 0.2647058823529412,
+          "B": 0.2665441176470588,
+          "C": 0.22794117647058823,
+          "D": 0.24080882352941177
+        },
+        "multi_token_fraction": 0.0,
+        "greedy": 0.8235294117647058,
+        "greedy_correct": 448,
+        "greedy_invalid": 0
+      },
+      "OCT": {
+        "n": 300,
+        "greedy": 0.62,
+        "greedy_correct": 186,
+        "greedy_invalid": 0
+      },
+      "Dermoscopy": {
+        "n": 300,
+        "greedy": 0.7233333333333334,
+        "greedy_correct": 217,
+        "greedy_invalid": 0
+      },
+      "Microscopy": {
+        "n": 300,
+        "greedy": 0.6333333333333333,
+        "greedy_correct": 190,
+        "greedy_invalid": 0
+      }
+    },
+    "other_modalities_mean_greedy": 0.6704761904761904,
+    "elapsed_seconds": 1078.6593590388075,
+    "peak_allocated_gpu_bytes": 9267296768
+  },
+  "status": {
+    "reason": "completed",
+    "phases": [
+      {
+        "phase": 0,
+        "reason": "completed",
+        "codes": [
+          0,
+          0
+        ],
+        "seconds": 4617.34421305079
+      },
+      {
+        "phase": 1,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 1086.405234706588
+      }
+    ]
+  },
+  "diagnostic_comparison_with_frozen": {
+    "passed": false,
+    "checks": {
+      "greedy_vs_greedy": true,
+      "greedy_vs_maj16": true,
+      "prediction_tv": true,
+      "pass16": false,
+      "other_greedy": true,
+      "brake": true
+    },
+    "gains": {
+      "greedy_vs_greedy": 0.3676470588235294,
+      "greedy_vs_maj16": 0.125,
+      "maj16": 0.125,
+      "pass16": -0.125,
+      "other_greedy": 0.179047619047619
+    },
+    "prediction_tv": 0.06523205612520239,
+    "supplemental_maj16": true
+  },
+  "paired_protocol_comparison_tt_v0_minus_ttrl": {
+    "greedy": 0.007352941176470673,
+    "maj16": 0.009191176470588314,
+    "pass16": 0.03860294117647067,
+    "band_coverage": 0.03125,
+    "other_greedy": -0.005238095238095153
+  }
+}
