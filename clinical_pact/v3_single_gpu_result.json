@@ -305,5 +305,87 @@
       "pathvqa": 0.2968525323534111,
       "slake": 0.4795821462488129
     }
+  },
+  "semantic_rescore": {
+    "semantic_validation_matrix": {
+      "s1": {
+        "medbook": 0.4230769230769231
+      },
+      "s2": {
+        "medbook": 0.47692307692307695,
+        "pathvqa": 0.54784
+      },
+      "s3": {
+        "medbook": 0.46923076923076923,
+        "pathvqa": 0.54816
+      }
+    },
+    "final_minus_peak": {
+      "medbook": -0.0076923076923077205,
+      "pathvqa": 0.0
+    },
+    "macro_final_minus_peak": -0.0038461538461538602,
+    "unreplayed_flip_rates": {
+      "medbook": 0.1509433962264151,
+      "pathvqa": 0.00019204916458613405
+    },
+    "macro_unreplayed_flip_rate": 0.0755677226955006,
+    "medbook_four_order_correct": {
+      "s1": 55,
+      "s2": 62,
+      "s3": 61
+    },
+    "completed_at": "2026-11-28T09:14:23+08:00",
+    "phases": [
+      {
+        "phase": 0,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 84.1411881223321
+      },
+      {
+        "phase": 1,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.008309098891914
+      },
+      {
+        "phase": 2,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 84.15463462844491
+      },
+      {
+        "phase": 3,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.0086162984371185
+      },
+      {
+        "phase": 4,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 84.15339660923928
+      },
+      {
+        "phase": 5,
+        "reason": "completed",
+        "codes": [
+          0
+        ],
+        "seconds": 4.00890889018774
+      }
+    ],
+    "scope": "New four-order validation scores on frozen checkpoints; binary validation and unreplayed probe decisions reused. A same-GPU baseline is in progress."
   }
 }
