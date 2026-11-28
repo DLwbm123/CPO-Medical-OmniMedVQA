@@ -1,0 +1,249 @@
+{
+  "task": "Dermoscopy",
+  "role": "baseline_and_mechanism_diagnostic",
+  "stage_b_original_decision": "failed",
+  "direction": "deferred_to_grounded_protocol",
+  "split": {
+    "holdout_questions": 600,
+    "holdout_images": 535,
+    "available_unlabeled_questions": 4757,
+    "available_training_images": 4188,
+    "overlap_images": 0
+  },
+  "cancelled_arms": {
+    "image_gate": {
+      "arm": "image_gate",
+      "reason": "prospective_replication_amendment",
+      "amendment_commit": "17d66e4",
+      "tt_v0_step_at_cancellation": 55
+    }
+  },
+  "arms": {
+    "tt_v0": {
+      "gate": {
+        "passed": false,
+        "conditions": {
+          "decision_gain": false,
+          "image_dependence": false,
+          "calibration": false,
+          "retention": false
+        },
+        "real_gain": {
+          "estimate": -0.075,
+          "ci95": [
+            -0.12919463087248323,
+            -0.020133385046035557
+          ],
+          "bootstrap_images": 535,
+          "n": 600
+        },
+        "image_dependence_delta": -0.25500000000000006,
+        "top_quartile_delta": -0.11333333333333329,
+        "retention_macro_delta": -0.14127100840336132,
+        "retention_by_modality": {
+          "CT": 0.050000000000000044,
+          "MRI": -0.16333333333333339,
+          "XRay": -0.17999999999999994,
+          "Ultrasound": -0.053333333333333344,
+          "Fundus": -0.14889705882352944,
+          "OCT": -0.2899999999999999,
+          "Microscopy": -0.20333333333333337
+        }
+      },
+      "training": {
+        "steps": 105,
+        "applied": 74,
+        "brake_stop": true,
+        "training_labels": 0,
+        "smoke": false,
+        "reference_matches": true,
+        "trainable_scope": "full",
+        "gpu_count": 2,
+        "image_gated_questions": 0,
+        "total_questions": 420,
+        "brake_steps": 31,
+        "peak_reserved_bytes": 42435870720
+      },
+      "frozen": {
+        "Dermoscopy": {
+          "real": {
+            "n": 600,
+            "correct": 382,
+            "accuracy": 0.6366666666666667,
+            "high_confidence_wrong": 6,
+            "high_confidence_wrong_rate": 0.01,
+            "top_quartile_accuracy": 0.9933333333333333
+          },
+          "black": {
+            "n": 600,
+            "correct": 204,
+            "accuracy": 0.34,
+            "high_confidence_wrong": 4,
+            "high_confidence_wrong_rate": 0.006666666666666667,
+            "top_quartile_accuracy": 0.3
+          }
+        },
+        "Ultrasound": {
+          "real": {
+            "n": 300,
+            "correct": 107,
+            "accuracy": 0.3566666666666667,
+            "high_confidence_wrong": 5,
+            "high_confidence_wrong_rate": 0.016666666666666666,
+            "top_quartile_accuracy": 0.5733333333333334
+          }
+        },
+        "MRI": {
+          "real": {
+            "n": 300,
+            "correct": 198,
+            "accuracy": 0.66,
+            "high_confidence_wrong": 2,
+            "high_confidence_wrong_rate": 0.006666666666666667,
+            "top_quartile_accuracy": 0.9733333333333334
+          }
+        },
+        "Microscopy": {
+          "real": {
+            "n": 300,
+            "correct": 195,
+            "accuracy": 0.65,
+            "high_confidence_wrong": 4,
+            "high_confidence_wrong_rate": 0.013333333333333334,
+            "top_quartile_accuracy": 0.9066666666666666
+          }
+        },
+        "Fundus": {
+          "real": {
+            "n": 544,
+            "correct": 408,
+            "accuracy": 0.75,
+            "high_confidence_wrong": 5,
+            "high_confidence_wrong_rate": 0.009191176470588236,
+            "top_quartile_accuracy": 0.9705882352941176
+          }
+        },
+        "OCT": {
+          "real": {
+            "n": 300,
+            "correct": 246,
+            "accuracy": 0.82,
+            "high_confidence_wrong": 1,
+            "high_confidence_wrong_rate": 0.0033333333333333335,
+            "top_quartile_accuracy": 1.0
+          }
+        },
+        "XRay": {
+          "real": {
+            "n": 300,
+            "correct": 229,
+            "accuracy": 0.7633333333333333,
+            "high_confidence_wrong": 7,
+            "high_confidence_wrong_rate": 0.023333333333333334,
+            "top_quartile_accuracy": 1.0
+          }
+        },
+        "CT": {
+          "real": {
+            "n": 300,
+            "correct": 177,
+            "accuracy": 0.59,
+            "high_confidence_wrong": 3,
+            "high_confidence_wrong_rate": 0.01,
+            "top_quartile_accuracy": 0.9333333333333333
+          }
+        }
+      },
+      "adapted": {
+        "Dermoscopy": {
+          "real": {
+            "n": 600,
+            "correct": 337,
+            "accuracy": 0.5616666666666666,
+            "high_confidence_wrong": 218,
+            "high_confidence_wrong_rate": 0.36333333333333334,
+            "top_quartile_accuracy": 0.88
+          },
+          "black": {
+            "n": 600,
+            "correct": 312,
+            "accuracy": 0.52,
+            "high_confidence_wrong": 198,
+            "high_confidence_wrong_rate": 0.33,
+            "top_quartile_accuracy": 0.9
+          }
+        },
+        "CT": {
+          "real": {
+            "n": 300,
+            "correct": 192,
+            "accuracy": 0.64,
+            "high_confidence_wrong": 78,
+            "high_confidence_wrong_rate": 0.26,
+            "top_quartile_accuracy": 0.84
+          }
+        },
+        "MRI": {
+          "real": {
+            "n": 300,
+            "correct": 149,
+            "accuracy": 0.49666666666666665,
+            "high_confidence_wrong": 94,
+            "high_confidence_wrong_rate": 0.31333333333333335,
+            "top_quartile_accuracy": 0.6666666666666666
+          }
+        },
+        "XRay": {
+          "real": {
+            "n": 300,
+            "correct": 175,
+            "accuracy": 0.5833333333333334,
+            "high_confidence_wrong": 77,
+            "high_confidence_wrong_rate": 0.25666666666666665,
+            "top_quartile_accuracy": 0.92
+          }
+        },
+        "Ultrasound": {
+          "real": {
+            "n": 300,
+            "correct": 91,
+            "accuracy": 0.30333333333333334,
+            "high_confidence_wrong": 133,
+            "high_confidence_wrong_rate": 0.44333333333333336,
+            "top_quartile_accuracy": 0.38666666666666666
+          }
+        },
+        "Fundus": {
+          "real": {
+            "n": 544,
+            "correct": 327,
+            "accuracy": 0.6011029411764706,
+            "high_confidence_wrong": 151,
+            "high_confidence_wrong_rate": 0.2775735294117647,
+            "top_quartile_accuracy": 0.7647058823529411
+          }
+        },
+        "OCT": {
+          "real": {
+            "n": 300,
+            "correct": 159,
+            "accuracy": 0.53,
+            "high_confidence_wrong": 87,
+            "high_confidence_wrong_rate": 0.29,
+            "top_quartile_accuracy": 0.88
+          }
+        },
+        "Microscopy": {
+          "real": {
+            "n": 300,
+            "correct": 134,
+            "accuracy": 0.44666666666666666,
+            "high_confidence_wrong": 106,
+            "high_confidence_wrong_rate": 0.35333333333333333,
+            "top_quartile_accuracy": 0.68
+          }
+        }
+      }
+    }
+  }
+}
