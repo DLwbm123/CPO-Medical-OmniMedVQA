@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "task": "Dermoscopy",
+  "split_seed": 100,
+  "expected_source_train": 5357,
+  "holdout_target_questions": 600,
+  "updates": 200,
+  "assistant_prefix": "\\boxed{",
+  "confidence_cutoff": 0.9,
+  "selective_coverages": [0.25, 0.5, 0.75, 1.0],
+  "bootstrap_seed": 100,
+  "bootstrap_samples": 10000,
+  "arms": ["tt_v0", "image_gate"],
+  "image_gate_threshold": 0.5,
+  "gate": {
+    "min_decision_gain": 0.05,
+    "max_image_dependence_drop": 0.02,
+    "max_high_confidence_wrong_rate": 0.03,
+    "max_top_quartile_accuracy_drop": 0.03,
+    "max_retained_macro_drop": 0.02,
+    "max_retained_task_drop": 0.05
+  },
+  "max_wall_seconds": 82800,
+  "output_guard_bytes": 38000000000
+}

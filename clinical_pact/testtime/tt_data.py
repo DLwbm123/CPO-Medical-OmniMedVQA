@@ -65,13 +65,15 @@ def load_unlabeled(task_dir, split, seed, exclude_ids=()):
     return result
 
 
-def load_labeled_eval(task_dir, split):
-    if split not in ('validation','test'):
+def load_labeled_eval(task_dir, split, *, include_ids=None):
+    if split not in ('validation','test') and not (split == 'train' and include_ids):
         raise ValueError('evaluation can read validation or test labels only')
     root = (task_dir/'images').resolve()
     rows = json.loads((task_dir/'jsons'/split/'data.json').read_text())
     result = []
     for row in rows:
+        if include_ids is not None and str(row['id']) not in include_ids:
+            continue
         question,gold = (turn['value'] for turn in row['conversations'])
         item = _item(row,root,question)
         letter = normalize(gold).upper()
@@ -80,6 +82,8 @@ def load_labeled_eval(task_dir, split):
         result.append((item,letter))
     if len({x.id for x,_ in result}) != len(result):
         raise ValueError('duplicate evaluation question IDs')
+    if include_ids is not None and {x.id for x,_ in result} != set(include_ids):
+        raise ValueError('evaluation records do not match the frozen holdout')
     return result
 
 

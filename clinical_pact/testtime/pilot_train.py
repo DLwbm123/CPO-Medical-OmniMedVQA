@@ -1,4 +1,4 @@
-"""Single-GPU stage B GRPO/GSPO using generated votes as its only reward."""
+"""Stage B GRPO/GSPO using generated votes as its only reward."""
 from collections import Counter
 import json
 import os
@@ -16,7 +16,7 @@ from trl.models.utils import disable_gradient_checkpointing
 import yaml
 
 from .choices import extract_letter, letter_tokens
-from .guard import Guard
+from .guard import Guard, mask_image_gate
 from .tt_data import load_unlabeled
 from .votes import gather_votes, training_indices, vote_decision
 from ..score_retained_checkpoints import write_json
@@ -62,6 +62,7 @@ class PilotTrainer(GRPOTrainer):
         self.audit = audit
         self.guard = None
         self.brake = False
+        self.skip_update = False
         self.brake_stop = False
         self.prepared = None
         self.updates_applied = 0
@@ -69,29 +70,50 @@ class PilotTrainer(GRPOTrainer):
         if self.ranks != run_spec['gpu_count'] or self.args.steps_per_generation != self.args.gradient_accumulation_steps:
             raise ValueError('pilot requires the frozen GPU count and a complete step per generation batch')
 
-    @torch.no_grad()
-    def _guard_reference(self):
+    def _choice_probabilities(self, model, item, *, black=False):
         processor = self.processing_class
         dataset = self.train_dataset
-        counts = Counter()
         prefix = r'\boxed{'
+        image = read_image(item)
+        if black:
+            image = Image.new('RGB',image.size)
+        messages = describe(item,dataset.user,dataset.system)
+        messages[-1]['content'] = [{'type':'image','image':image},
+                                   {'type':'text','text':messages[-1]['content']}]
+        prompt = processor.apply_chat_template(messages,tokenize=False,add_generation_prompt=True)
+        ids, choices = letter_tokens(processor.tokenizer,item.letters,prefix)
+        tensors = processor(text=[prompt+prefix],images=[image],return_tensors='pt').to(self.accelerator.device)
+        if tensors['input_ids'][0,-len(ids):].tolist() != ids:
+            raise ValueError('forced-choice prefix tokenization differs at the prompt boundary')
+        logits = model(**tensors,logits_to_keep=1,use_cache=False).logits[0,-1,choices].float()
+        return logits.softmax(0)
+
+    @torch.no_grad()
+    def _guard_reference(self):
+        counts = Counter()
         with (
             unwrap_model_for_generation(self.model_wrapped,self.accelerator) as model,
             disable_gradient_checkpointing(self.model,self.args.gradient_checkpointing_kwargs),
         ):
-            for item in dataset.items[:self.spec['guard_reference_questions']]:
-                image = read_image(item)
-                messages = describe(item,dataset.user,dataset.system)
-                messages[-1]['content'] = [{'type':'image','image':image},
-                                           {'type':'text','text':messages[-1]['content']}]
-                prompt = processor.apply_chat_template(messages,tokenize=False,add_generation_prompt=True)
-                ids, choices = letter_tokens(processor.tokenizer,item.letters,prefix)
-                tensors = processor(text=[prompt+prefix],images=[image],return_tensors='pt').to(self.accelerator.device)
-                if tensors['input_ids'][0,-len(ids):].tolist() != ids:
-                    raise ValueError('forced-choice prefix tokenization differs at the prompt boundary')
-                logits = model(**tensors,logits_to_keep=1,use_cache=False).logits[0,-1].float()
-                counts[item.letters[int(logits[choices].argmax())]] += 1
+            for item in self.train_dataset.items[:self.spec['guard_reference_questions']]:
+                counts[item.letters[int(self._choice_probabilities(model,item).argmax())]] += 1
         return counts
+
+    @torch.no_grad()
+    def _blind_predictions(self):
+        dataset = self.train_dataset
+        local = []
+        with (
+            unwrap_model_for_generation(self.model_wrapped,self.accelerator) as model,
+            disable_gradient_checkpointing(self.model,self.args.gradient_checkpointing_kwargs),
+        ):
+            for qid,_ in self.prompt_set:
+                item = dataset.items[dataset.index[qid]]
+                options = self._choice_probabilities(model,item,black=True).tolist()
+                if not 0.999 <= sum(options) <= 1.001:
+                    raise ValueError('invalid black-image legal-option probabilities')
+                local.append((qid,dict(zip(item.letters,options,strict=True))))
+        return dict(gather_votes(local))
 
     def _generate_and_score_completions(self, inputs):
         width = self.num_generations
@@ -115,6 +137,8 @@ class PilotTrainer(GRPOTrainer):
             self.guard = Guard(reference,window=self.spec['guard_window_questions'],
                                limit=self.spec['guard_max_tv'],
                                consecutive_limit=self.spec['guard_max_consecutive_steps'])
+        threshold = self.arm.get('image_gate_threshold')
+        blind = self._blind_predictions() if threshold is not None else {}
         result = super()._generate_and_score_completions(inputs)
         before = (result['advantages'] != 0).sum()
         tv, self.brake, self.brake_stop = (
@@ -126,14 +150,22 @@ class PilotTrainer(GRPOTrainer):
         if self.arm['gate'] and not (self.acceptance and step == 1):
             flags = torch.tensor([not x.in_band for x in self.decisions],device=self.accelerator.device)
             result['advantages'].masked_fill_(flags.repeat_interleave(width),0)
+        blind_labels = {qid:blind[qid].get(d.pseudo_label)
+                        for qid,(d,_) in self.all_decisions.items()} if blind else {}
+        omitted = {qid for qid,p in blind_labels.items() if p is not None and p >= threshold}
+        if blind:
+            mask_image_gate(result,[qid for qid,_ in self.prompt_set],omitted,width)
+        self.skip_update = self.brake or len(omitted) == prompts
         if self.brake or (self.acceptance and step == 2):
             result['advantages'].zero_()
         global_counts = self.accelerator.reduce(torch.stack((before,(result['advantages'] != 0).sum())),
                                                 reduction='sum').tolist()
         row = {'step':step,'tv':tv,'brake':self.brake,'brake_stop':self.brake_stop,
                'nonzero_advantages_before':global_counts[0],'nonzero_advantages_after':global_counts[1],
+               'image_gate_skips':len(omitted),'skip_update':self.skip_update,
                'questions':[{'id':qid,'counts':d.counts,'pseudo_label':d.pseudo_label,
                              'peak':d.peak,'entropy':d.entropy,'in_band':d.in_band,
+                             'blind_vote_probability':blind_labels.get(qid),'image_gated':qid in omitted,
                              'training_indices':list(selection)}
                             for qid,(d,selection) in self.all_decisions.items()]}
         if self.accelerator.is_main_process:
@@ -193,7 +225,7 @@ class PilotTrainer(GRPOTrainer):
         model.train()
         self.prepared = super()._prepare_inputs(inputs)
         try:
-            if self.brake:
+            if self.skip_update:
                 # With the DeepSpeed accelerator, skipping backward also skips the optimizer boundary.
                 self._step += 1
                 return torch.zeros((),device=self.accelerator.device)
@@ -223,6 +255,7 @@ class TrackPilot(TrainerCallback):
                'peak_allocated_bytes':max(allocated),'peak_reserved_bytes':max(reserved),
                'per_rank_peak_allocated_bytes':allocated,'per_rank_peak_reserved_bytes':reserved,
                'updates_applied':self.trainer.updates_applied,'brake':self.trainer.brake,
+               'skip_update':self.trainer.skip_update,
                'optimizer_steps':self.trainer.model_wrapped.global_steps-self.previous_engine_steps}
         self.rows.append(row)
         if state.global_step == 20:
@@ -230,8 +263,8 @@ class TrackPilot(TrainerCallback):
             row['projected_wall_seconds'] = time.time()-self.clock['started'] + (args.max_steps-20)*seconds
         if acc.is_main_process:
             write_json(self.out/'timing.json',self.rows)
-        if row['optimizer_steps'] != int(not row['brake']):
-            raise RuntimeError('optimizer step count contradicts the brake signal')
+        if row['optimizer_steps'] != int(not row['skip_update']):
+            raise RuntimeError('optimizer step count contradicts the exclusion signal')
         if row.get('projected_wall_seconds',0) > self.spec['projected_wall_limit_seconds']:
             raise RuntimeError('pilot forecast exceeds its frozen time limit')
         if self.trainer.brake_stop:
@@ -270,7 +303,7 @@ def main():
     out = Path(os.environ['OUT'])
     spec = json.loads((out/'protocol.json').read_text())
     arm = os.environ['TT_ARM']
-    if spec['stage'] != 'B' or spec['prompt'] != 'reason' or arm not in ('ttrl','tt_v0'):
+    if spec['stage'] not in ('B','B_replication') or spec['prompt'] != 'reason' or not spec['arms'].get(arm,{}).get('update'):
         raise ValueError('unknown pilot training setup')
     train_dir = Path(os.environ['TT_REDACTED_TASK'])
     items = load_unlabeled(train_dir,'train',spec['seed'])

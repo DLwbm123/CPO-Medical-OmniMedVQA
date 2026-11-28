@@ -2,6 +2,16 @@
 from collections import Counter, deque
 
 
+def mask_image_gate(batch, question_ids, blocked, width):
+    import torch
+
+    device = batch['advantages'].device
+    excluded = torch.tensor([qid in blocked for qid in question_ids],device=device).repeat_interleave(width)
+    batch['advantages'].masked_fill_(excluded,0)
+    # The completion mask removes the KL term for excluded trajectories too.
+    batch['completion_mask'].masked_fill_(excluded[:,None],0)
+
+
 def total_variation(first, second):
     a, b = sum(first.values()), sum(second.values())
     if not a or not b:

@@ -8,6 +8,10 @@ from .tt_data import load_unlabeled
 
 def redact(source, target, seed):
     records = json.loads((source/'jsons'/'train'/'data.json').read_text())
+    return redact_records(source,target,records,seed)
+
+
+def redact_records(source, target, records, seed):
     clean = []
     for record in records:
         prompt = record['conversations'][0]

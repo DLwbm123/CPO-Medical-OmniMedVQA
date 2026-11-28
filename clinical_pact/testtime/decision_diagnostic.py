@@ -83,6 +83,13 @@ def route(visual, prior_margin, image_gain, cfg):
 
 
 def evaluate(out, cfg, pilot, arm):
+    root = Path(os.environ['TT_DATA'])
+    variants = ('real','black') if arm in cfg['black_arms'] else ('real',)
+    cohorts = [(name,rows,variants) for name,rows in evaluation_cohorts(root,pilot)]
+    score_cohorts(out,cfg,pilot,arm,cohorts)
+
+
+def score_cohorts(out, cfg, pilot, arm, cohorts):
     import torch
     from ..validate_development import load_checkpoint
 
@@ -91,13 +98,10 @@ def evaluate(out, cfg, pilot, arm):
     prefix = cfg['assistant_prefix']
     tokens = {letters:letter_tokens(processor.tokenizer,letters,prefix)
               for letters in ('AB','ABC','ABCD')}
-    root = Path(os.environ['TT_DATA'])
-    variants = ('real','black') if arm in cfg['black_arms'] else ('real',)
-    cohorts = list(evaluation_cohorts(root,pilot))
-    total = sum(len(rows) for _, rows in cohorts)*len(variants)
+    total = sum(len(rows)*len(variants) for _,rows,variants in cohorts)
     done = 0
     with torch.inference_mode():
-        for name, rows in cohorts:
+        for name, rows, variants in cohorts:
             predictions = {variant:[] for variant in variants}
             for item, label in rows:
                 prefix_ids, candidate_ids = tokens[item.letters]
