@@ -1,4 +1,4 @@
-"""Run P0 and its two gated pilots only after the old replication releases the cards."""
+"""Run P0 when memory permits, then run the gated pilots after replication."""
 import json
 import os
 from pathlib import Path
@@ -12,18 +12,19 @@ from ..score_retained_checkpoints import write_json
 from ..supervise_semantic_replay import run_workers
 
 
-def wait_for_replication(out, replication):
+def wait_for_replication(out, replication, deadline):
     clock = json.loads((replication/'clock.json').read_text())
     write_json(out/'progress.json',{'phase':'waiting_for_replication','gpu_workers':0})
-    while time.time() < clock['deadline']:
-        final = replication/'amended_status.json'
+    final = replication/'amended_status.json'
+    while True:
         if final.exists():
             status = json.loads(final.read_text())
             if status['reason']!='completed_with_cancelled_arm':
                 raise RuntimeError('the preserved replication arm did not reach a verified endpoint')
             return
+        if time.time() >= min(clock['deadline'],deadline):
+            raise RuntimeError('replication exceeded its available time')
         time.sleep(10)
-    raise RuntimeError('replication exceeded its original deadline')
 
 
 def free_cards(gpus, minimum, deadline):
@@ -64,7 +65,6 @@ def run(out):
     configs = {name:json.loads((out/name).read_text()) for name in
         ('precheck_protocol.json','dev_pilot_protocol.json','confirm_pilot_protocol.json','pilot_protocol.json')}
     pre,dev,conf = (configs[k] for k in ('precheck_protocol.json','dev_pilot_protocol.json','confirm_pilot_protocol.json'))
-    wait_for_replication(out,replication)
     start = time.time()
     deadline = start+min(pre['max_wall_seconds'],dev['max_wall_seconds'],conf['max_wall_seconds'],23*3600)
     clock = {'started':start,'deadline':deadline}
@@ -110,6 +110,7 @@ def run(out):
     if not choice['passed']:
         finish('p0_failed','stop_and_report')
         return
+    wait_for_replication(out,replication,deadline)
 
     protected = p0/'private'/'forbidden_images.json'
     def environment(folder,arm,gpu,stream):
