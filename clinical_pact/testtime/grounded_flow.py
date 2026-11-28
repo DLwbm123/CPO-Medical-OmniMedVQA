@@ -28,10 +28,13 @@ def wait_for_replication(out, replication):
 
 def free_cards(gpus, minimum, deadline):
     while time.time()<deadline:
-        result = subprocess.check_output(['nvidia-smi','-i',','.join(gpus),
-            '--query-gpu=memory.free','--format=csv,noheader,nounits'],text=True)
+        command = ['nvidia-smi','-i',','.join(gpus)]
+        result = subprocess.check_output([*command,'--query-gpu=memory.free',
+                                          '--format=csv,noheader,nounits'],text=True)
+        busy = subprocess.check_output([*command,'--query-compute-apps=pid',
+                                        '--format=csv,noheader,nounits'],text=True)
         free = [int(x) for x in result.splitlines()]
-        if len(free)==len(gpus) and min(free)>=minimum:
+        if not busy.strip() and len(free)==len(gpus) and min(free)>=minimum:
             return
         time.sleep(15)
     raise RuntimeError('the authorized GPUs did not have enough available memory')
@@ -57,7 +60,7 @@ def audit_summary(destination):
 def run(out):
     replication = Path(os.environ['TT_REPLICATION_OUT']).resolve(strict=True)
     source = Path(__file__).parent
-    gpus = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+    gpus = os.environ['TT_GPU_ASSIGNMENT'].split(',')
     if gpus != ['3','5']:
         raise ValueError('grounded flow is limited to the two previously assigned cards')
     configs = {name:json.loads((out/name).read_text()) for name in
